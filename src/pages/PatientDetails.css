@@ -1,0 +1,25 @@
+.patient-details {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-family: Arial, sans-serif;
+}
+
+.patient-details h2 {
+  color: #1e3a8a; /* bleu foncé */
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.patient-details p {
+  font-size: 16px;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.patient-details p strong {
+  color: #333;
+}
