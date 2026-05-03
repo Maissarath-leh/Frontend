@@ -1,189 +1,239 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../components/BackButton";
-
+import api from "../api";
 
 export default function Login() {
-  const [Email, setEmail] = useState('');
-  const [Password, setPassword] = useState('');
-  const [Role, setRole] = useState('patient'); // valeur par défaut
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [erreur, setErreur] = useState('');
+  const [chargement, setChargement] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    if (!Email.trim() || !Password.trim()) {
-      alert('Merci de renseigner un email et un mot de passe.');
+  const handleLogin = async () => {
+    setErreur('');
+
+    if (!email.trim() || !password.trim()) {
+      setErreur('Merci de renseigner un email et un mot de passe.');
       return;
     }
 
-    // Exemple de validation simple à améliorer côté API
-
-    if (!/[^a-zA-Z0-9]/.test(Password)) {
-        alert('Le mot de passe doit contenir au moins 1 caractère spécial');
-        return;
-    }
-
-    if (Password.length < 6) {
-      alert('Le mot de passe doit contenir au moins 6 caractères.');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErreur('Votre email doit être au format user@email.com.');
       return;
     }
 
-    if (!/[A-Z]/.test(Password)){
-        alert('Le mot de passe doit contenir au moins une lettre majuscule.');
-        return;
+    if (password.length < 6) {
+      setErreur('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
     }
 
-     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(Email)) {
-    alert('Votre email doit être au format user@email.com.');
-    return;
-}
+    try {
+      setChargement(true);
+      const response = await api.post('/login', { email, password });
+      const { user, token } = response.data;
 
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
 
-    alert(`Connexion réussie en tant que ${Role}`);
+      if (user.role === 'patient') {
+        navigate('/patient-dashboard');
+      } else if (user.role === 'medecin') {
+        navigate('/medecin-dashboard');
+        } else if (user.role === 'pharmacie') {
+         navigate('/pharmacie-dashboard');
+    
+      } else if (user.role === 'admin') {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/');
+      }
 
-    if (Role === 'patient') {
-      navigate('/patient-dashboard');
-    } else if (Role === 'medecin') {
-      navigate('/medecin-dashboard');
-    } else {
-      navigate('/');
+    } catch (error) {
+      if (error.response?.status === 401) {
+        setErreur('Email ou mot de passe incorrect.');
+      } else {
+        setErreur('Une erreur est survenue. Vérifiez votre connexion.');
+      }
+    } finally {
+      setChargement(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <BackButton />
+    <div style={styles.page}>
+      <div style={styles.leftPanel}>
+        <img src="/doctor.jpg" alt="Médecin" style={styles.doctorImg} />
+      </div>
 
-
-      {/* --- CORPS DE LA PAGE --- */}
-      <main style={styles.main}>
-        <div style={styles.loginCard}>
+      <div style={styles.rightPanel}>
+        <BackButton />
+        <div style={styles.formWrapper}>
           <h1 style={styles.title}>Connexion</h1>
           <p style={styles.subtitle}>Espace Utilisateur</p>
-          
+
+          {erreur && <div style={styles.erreurBox}>{erreur}</div>}
+
           <form style={styles.form}>
             <div style={styles.inputGroup}>
-              <label className="email">Email</label>
-              <input 
-                type="email" required
-                placeholder="ex: user@gmail.com" 
+              <label style={styles.label}>Email</label>
+              <input
+                type="email"
+                placeholder="ex: user@gmail.com"
                 style={styles.input}
+                value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
             <div style={styles.inputGroup}>
-              <label className="password">Mot de passe</label>
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                style={styles.input} 
-                value={Password}
+              <label style={styles.label}>Mot de passe</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                style={styles.input}
+                value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
-            {/* --- CHOIX DU RÔLE --- */}
-            <div style={styles.inputGroup}>
-              <label className="youare">Vous êtes :</label>
-              <select 
-                style={styles.select} 
-                value={Role} 
-                onChange={(e) => setRole(e.target.value)}
-              >
-                <option value="medecin">Médecin</option>
-                <option value="patient">Patient</option>
-              </select>
-            </div>
-
-            <button 
-              type="button" 
-              style={styles.btnLogin} 
+            <button
+              type="button"
+              style={{...styles.btnLogin, opacity: chargement ? 0.7 : 1}}
               onClick={handleLogin}
+              disabled={chargement}
             >
-              Se connecter
+              {chargement ? 'Connexion...' : 'Se connecter'}
             </button>
+            <p style={{textAlign: 'center', marginTop: '12px', fontSize: '13px'}}>
+  <span 
+    onClick={() => navigate('/forgot-password')} 
+    style={{color: '#1266f7', cursor: 'pointer', fontWeight: '600'}}
+  >
+    Mot de passe oublié ?
+  </span>
+</p>
           </form>
 
           <p style={styles.footerText}>
-            Pas encore de compte ? <span onClick={() => navigate("/register")} style={{color: '#3498db', cursor: 'pointer'}}>S'inscrire</span>
+            Pas encore de compte ?{' '}
+            <span onClick={() => navigate("/register")} style={{color: '#1266f7', cursor: 'pointer'}}>
+              S'inscrire
+            </span>
           </p>
-        </div>
-      </main>
 
-      {/* --- PIED DE PAGE --- */}
-      <footer style={styles.footer}>
-        &copy; 2026 - Projet de Télésurveillance par Martine & Maissaratou
-      </footer>
+          <footer style={styles.footer}>
+            &copy; 2026 - Projet de Télésurveillance par Martine & Maissaratou
+          </footer>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
 
-// --- STYLE ---
 const styles = {
-  container: {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  page: {
+  display: 'flex',
+  height: 'calc(100vh - 65px)',
+  overflow: 'hidden',
+},
+  leftPanel: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  doctorImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center top',
+  },
+  rightPanel: {
+    flex: 1,
     display: 'flex',
     flexDirection: 'column',
+    justifyContent: 'center',
+    backgroundColor: '#f0f2f5',
+    padding: '30px 40px',
+    overflowY: 'auto',
   },
-  nav: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '15px 50px',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(10px)',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    position: 'relative',
-    zIndex: 10,
-  },
-  logo: { color: '#2c3e50', margin: 0, fontSize: '28px', fontWeight: 'bold' },
-  btnNav: { padding: '10px 18px', borderRadius: '25px', border: '2px solid #3498db', background: 'none', color: '#3498db', cursor: 'pointer', marginRight: '15px', fontWeight: 'bold', transition: 'all 0.3s ease' },
-  btnContact: { padding: '10px 18px', borderRadius: '25px', border: '2px solid #3498db', background: 'none', color: '#3498db', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.3s ease' },
-  main: { display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, padding: '20px' },
-  loginCard: {
+  formWrapper: {
+    maxWidth: '420px',
+    width: '100%',
+    margin: '0 auto',
     backgroundColor: 'white',
     padding: '40px',
     borderRadius: '20px',
-    boxShadow: '0 15px 35px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '450px',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.08)',
+  },
+  title: {
+    color: '#2c3e50',
+    marginBottom: '8px',
+    fontSize: '28px',
+    fontWeight: 'bold',
     textAlign: 'center',
-    animation: 'slideIn 0.5s ease-out',
   },
-  title: { color: '#2c3e50', marginBottom: '10px', fontSize: '32px', fontWeight: 'bold' },
-  subtitle: { color: '#1266f7', marginBottom: '35px', fontSize: '16px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '25px' },
-  inputGroup: { textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px' },
+  subtitle: {
+    color: '#1266f7',
+    marginBottom: '24px',
+    fontSize: '15px',
+    textAlign: 'center',
+  },
+  erreurBox: {
+    backgroundColor: '#fde8e8',
+    color: '#c0392b',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '15px',
+    fontSize: '14px',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '18px',
+  },
+  inputGroup: {
+    textAlign: 'left',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  label: {
+    color: '#1a1a2e',
+    fontWeight: '600',
+    fontSize: '13px',
+  },
   input: {
-    padding: '15px 20px',
-    borderRadius: '12px',
-    border: '2px solid #e1e8ed',
-    fontSize: '16px',
-    transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
-  },
-  select: {
-    padding: '15px 20px',
-    borderRadius: '12px',
-    border: '2px solid #e1e8ed',
-    fontSize: '16px',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    transition: 'border-color 0.3s ease',
+    padding: '13px 16px',
+    borderRadius: '10px',
+    border: '2px solid #1266f7',
+    fontSize: '14px',
+    color: '#1a1a2e',
+    backgroundColor: '#f8faff',
+    outline: 'none',
   },
   btnLogin: {
-    padding: '15px',
-    borderRadius: '12px',
+    padding: '14px',
+    borderRadius: '10px',
     border: 'none',
-    background: 'linear-gradient(135deg, #1266f7, #1266f7)',
+    background: '#1266f7',
     color: 'white',
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: 'bold',
     cursor: 'pointer',
-    marginTop: '15px',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    marginTop: '8px',
   },
-  footerText: { marginTop: '25px', fontSize: '14px', color: '#7f8c8d' },
-  footer: { textAlign: 'center', padding: '25px', color: '#bdc3c7', fontSize: '12px', backgroundColor: 'rgba(255, 255, 255, 0.8)' }
+  footerText: {
+    marginTop: '20px',
+    fontSize: '14px',
+    color: '#7f8c8d',
+    textAlign: 'center',
+  },
+  footer: {
+    textAlign: 'center',
+    marginTop: '20px',
+    color: '#bdc3c7',
+    fontSize: '11px',
+  },
 };

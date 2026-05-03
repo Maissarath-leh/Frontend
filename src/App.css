@@ -1,24 +1,32 @@
-/* --- Variables globales --- */
 :root {
-  --primary: #3498db;       /* Bleu principal */
-  --primary-dark: #2980b9;  /* Bleu foncé */
-  --accent: #2ecc71;        /* Vert accent */
-  --danger: #e74c3c;        /* Rouge pour déconnexion */
-  --text: #2c3e50;          /* Texte principal */
-  --text-light: #7f8c8d;    /* Texte secondaire */
-  --bg: #f4f7f6;            /* Fond clair */
-  --card-bg: #ffffff;       /* Fond des cartes */
+  --primary: #3498db;
+  --primary-dark: #2980b9;
+  --accent: #2ecc71;
+  --danger: #e74c3c;
+  --text: #2c3e50;
+  --text-light: #7f8c8d;
+  --bg: #f4f7f6;
+  --card-bg: #ffffff;
   --shadow: 0 8px 20px rgba(0,0,0,0.1);
+  
 }
 
-/* --- Reset --- */
-body {
+html, body {
+  height: 100%;
   margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
   font-family: 'Poppins', sans-serif;
-  background: linear-gradient(135deg, #141b33 0%, #2b3861 100%);
   color: #f4f6fb;
 }
-
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
 h1, h2, h3, h4, h5, h6, p, ul, li {
   color: #1f2d49;
 }
@@ -29,12 +37,8 @@ h1, h2, h3, h4, h5, h6, p, ul, li {
 
 .page {
   min-height: 100vh;
-  padding: 40px 20px 60px;
+  padding: 0;
   background: transparent;
-}
-
-.home-page {
-  background: linear-gradient(135deg, #0a1a3f 0%, #142a5f 55%, #0a1738 100%);
 }
 
 .home-hero {
@@ -52,7 +56,7 @@ h1, h2, h3, h4, h5, h6, p, ul, li {
 .hero-text {
   text-align: left;
   padding-right: 16px;
-  padding-top: 30px;  /* descendre le bloc texte */
+  padding-top: 30px;
 }
 
 .hero-text h1 {
@@ -129,7 +133,6 @@ h1, h2, h3, h4, h5, h6, p, ul, li {
   color: #2a8fd6;
   border: 2px solid #2a8fd6;
 }
-
 
 .features article h3 {
   color: #1f2d49;
@@ -211,6 +214,7 @@ h1, h2, h3, h4, h5, h6, p, ul, li {
   gap: 12px;
   padding-top: 8px;
 }
+
 .contact-page {
   background: linear-gradient(135deg, #081a3d 0%, #0f2753 100%);
 }
@@ -309,7 +313,7 @@ h1, h2, h3, h4, h5, h6, p, ul, li {
 @media (max-width: 920px) {
   .contact-hero {
     grid-template-columns: 1fr;
-    padding: 26px;
+    padding: 20px;
   }
 
   .contact-info {
@@ -324,6 +328,7 @@ h1, h2, h3, h4, h5, h6, p, ul, li {
     flex-direction: column;
   }
 }
+
 .form-card label {
   display: block;
   margin-top: 12px;
@@ -346,14 +351,12 @@ h1, h2, h3, h4, h5, h6, p, ul, li {
   margin-top: 40px;
 }
 
-/* --- Container principal --- */
 .container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-/* --- Navigation --- */
 nav {
   display: flex;
   justify-content: space-between;
@@ -383,7 +386,6 @@ nav button:hover {
   color: #fff;
 }
 
-/* --- Section principale --- */
 main {
   display: flex;
   justify-content: center;
@@ -392,7 +394,6 @@ main {
   background-color: var(--bg);
 }
 
-/* --- Carte de connexion/inscription --- */
 .loginCard {
   background-color: var(--card-bg);
   padding: 30px;
@@ -414,7 +415,6 @@ main {
   color: var(--text-light);
 }
 
-/* --- Formulaire --- */
 form {
   display: flex;
   flex-direction: column;
@@ -460,7 +460,6 @@ form {
   }
 }
 
-
 input, select {
   padding: 12px;
   border-radius: 8px;
@@ -474,7 +473,6 @@ input:focus, select:focus {
   outline: none;
 }
 
-/* --- Boutons --- */
 button {
   padding: 12px;
   border-radius: 8px;
@@ -503,7 +501,6 @@ button {
   opacity: 0.9;
 }
 
-/* --- Texte de pied de formulaire --- */
 .footerText {
   margin-top: 20px;
   font-size: 14px;
@@ -520,7 +517,6 @@ button {
   text-decoration: underline;
 }
 
-/* --- Dashboard --- */
 .dashboard-wrapper {
   max-width: 1100px;
   margin: 40px auto;
@@ -623,16 +619,14 @@ button {
   opacity: 0.9;
 }
 
-/* --- Menu global --- */
 .navbar {
   width: 100%;
-  background-color: #fff;
+  background-color: #0a1f5c;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   position: sticky;
   top: 0;
   z-index: 100;
 }
-
 .navbar-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -660,7 +654,6 @@ button {
   color: #3498db;
 }
 
-/* --- Pied de page --- */
 footer {
   text-align: center;
   padding: 20px;
@@ -668,7 +661,6 @@ footer {
   font-size: 12px;
 }
 
-/* --- Animations --- */
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
@@ -678,62 +670,6 @@ footer {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-/* --- Navbar burger --- */
-.navbar {
-  width: 100%;
-  background-color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.navbar-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 24px;
-}
-
-.logo {
-  font-size: 1.6rem;
-  font-weight: bold;
-  color: #2c3e50;
-}
-.troc {
-  font-size: 1.02rem;
-  font-weight: lighter;
-  color: #000000;
-}
-.transatlantique {
-  font-size: 1.02rem;
-  font-weight: lighter;
-  color: #000000;
-}
-.enchère {
-  font-size: 1.02rem;
-  font-weight: lighter;
-  color: #000000;
-}
-.email {
-  font-size: 1.02rem;
-  font-weight: lighter;
-  color: #000000;
-}
-.password {
-  font-size: 1.02rem;
-  font-weight: lighter;
-  color: #000000;
-}
-.youare {
-  font-size: 1.02rem;
-  font-weight: lighter;
-  color: #000000;
-}
-
 
 .burger {
   width: 30px;
@@ -772,15 +708,17 @@ footer {
 .nav-links {
   position: absolute;
   top: 60px;
-  left: 0;
   right: 0;
-  background-color: #fff;
+  left: auto;
+  width: 180px;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 12px 0;
+  gap: 10px;
+  padding: 16px 0;
   margin: 0;
-  border-top: 1px solid #f0f0f0;
+  border-radius: 0 0 12px 12px;
   transform: translateY(-250px);
   opacity: 0;
   pointer-events: none;
@@ -793,29 +731,73 @@ footer {
   opacity: 1;
   pointer-events: auto;
 }
-
-.nav-links a {
-  color: #34495e;
-  text-decoration: none;
+.nav-links a, .nav-links span {
+  color: #0a1f5c;
   font-weight: 600;
-  transition: color 0.2s ease;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 0;
 }
-
 .nav-links a:hover {
-  color: #3498db;
+  color: #1266f7;
 }
 
+.troc {
+  font-size: 1.02rem;
+  font-weight: lighter;
+  color: #000000;
+}
 
+.transatlantique {
+  font-size: 1.02rem;
+  font-weight: lighter;
+  color: #000000;
+}
 
-/* Hover effects */
+.enchère {
+  font-size: 1.02rem;
+  font-weight: lighter;
+  color: #000000;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px;
+}
+
+.nav-links * {
+  display: block;
+  width: 100%;
+}
+.help-page-wrapper {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.email {
+  font-size: 1.02rem;
+  font-weight: lighter;
+  color: #000000;
+}
+
+.password {
+  font-size: 1.02rem;
+  font-weight: lighter;
+  color: #000000;
+}
+
+.youare {
+  font-size: 1.02rem;
+  font-weight: lighter;
+  color: #000000;
+}
+
 .btnLogin:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-}
-
-.btnNav:hover, .btnContact:hover {
-  background-color: #3498db;
-  color: white;
 }
 
 input:focus, select:focus {
