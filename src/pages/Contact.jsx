@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 export default function Contact() {
   const [name, setName] = useState('');
@@ -8,16 +9,21 @@ export default function Contact() {
   const [envoye, setEnvoye] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email || !message) return;
-    setEnvoye(true);
-    setTimeout(() => {
-      setEnvoye(false);
-      setName('');
-      setEmail('');
-      setMessage('');
-    }, 3000);
+    try {
+      await api.post('/contact', { nom: name, email, message });
+      setEnvoye(true);
+      setTimeout(() => {
+        setEnvoye(false);
+        setName('');
+        setEmail('');
+        setMessage('');
+      }, 3000);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -330,4 +336,4 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
   },
-};
+};  

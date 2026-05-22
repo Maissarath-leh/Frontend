@@ -1,0 +1,84 @@
+{
+  "nav": {
+    "home": "Xwé",
+    "about": "Gando",
+    "contact": "Xókan",
+    "help": "Alɔgɔ",
+    "login": "Biyi",
+    "register": "Nyikɔ",
+    "brand": "HealthTech"
+  },
+  "home": {
+    "title": "HealthTech",
+    "subtitle": "Azɔnwlémɛ kpɔnkpɔn gbɔn adɔkan jí, bɔbɔ bɔ hwéhuhu ă.",
+    "slogans": [
+      "Mǐtɔn lanklɛn wɛ nyí nǔɖexlɛmɛ mǐtɔn.",
+      "Ðɔ xo xa azɔnwlémɛtɔ towe lɛ ɖò hwɛhuhu mɛ.",
+      "Télésurveillance ɔ ɖò azɔ̌ wà ná lanklɛn towe."
+    ],
+    "stats_patients": "Azɔnwlémɛtɔ́ lɛ",
+    "stats_doctors": "Azɔnwlémɛtɔ́ lɛ",
+    "stats_available": "Ɖisí",
+    "btn_login": "Biyi",
+    "btn_register": "Nyikɔ",
+    "scroll": "Kpɔ́n",
+    "about_title": "Nɛ̌ HealthTech nɔ wà gbɔn?",
+    "about_subtitle": "Télésurveillance sín azɔ̌xwé ɖokpó bǐbǐ",
+    "contact_title": "Ðɔ xo xa mǐ",
+    "contact_subtitle": "Nǔkanbyɔ́ ɖé wɛ? Mǐ ɖò fí bo na alɔgɔ we.",
+    "contact_btn": "📨 Yì xókan tɛ́nmɛ",
+    "footer": "© 2026 HealthTech — Télésurveillance sín azɔ̌ɖé gbɔn Martine & Maissaratou",
+    "carousel": [
+      {
+        "icon": "📡",
+        "titre": "Kúnkan lɛ sín kplékplé",
+        "description": "Capteurs connectés lɛ nɔ mɛ̀ hwɛhuhu mɛ, kúnkan towe lɛ: hǔnsin, awǎjijɛ, kpɛ́n bɔ nǔɖuɖu kpíkpé kpó hwéxónú kpó. Kúnkan lɛ nɔ yì plateforme jí ɖéɖé.",
+        "couleur": "#1266f7"
+      },
+      {
+        "icon": "🏥",
+        "titre": "Azɔnwlémɛ sín kpɔ́nkpɔn",
+        "description": "Azɔnwlémɛtɔ́ towe nɔ mɔ wemá azɔnwlémɛ towe bǐ sín tableau de bord tɔn. É ɖó ná kpɔ́n mɛ̀ kúnkan towe lɛ hwénù è è jɛ è é kpó.",
+        "couleur": "#0a1f5c"
+      },
+      {
+        "icon": "🤖",
+        "titre": "Intelligence Artificielle",
+        "description": "Mǐtɔn module IA ɔ nɔ kpɔ́n kúnkan azɔnwlémɛ towe lɛ hwɛcɛ. Hwénù è anomaly ɖé ɖò hǔnsin mɛ ǒ, alɔkpa ɖé nɔ yì ɖéɖé.",
+        "couleur": "#27ae60"
+      },
+      {
+        "icon": "🔔",
+        "titre": "Alɔkpa ɖéɖé lɛ",
+        "description": "Hwénù è nǔ ɖò jijɛ mɛ ɔ, azɔnwlémɛtɔ́ kpó azɔnwlémɛtɔ́ kpó nɔ mɔ alɔkpa ɖé. Azɔnwlémɛtɔ́ ɔ ɖó ná wà nú hwɛcɛ bɔ ma ɖò tɛ́nkpɔn hwèɖevɔ.",
+        "couleur": "#e74c3c"
+      },
+      {
+        "icon": "💊",
+        "titre": "Azɔ̌xwé amasin tɔn",
+        "description": "Ordonnances è azɔnwlémɛtɔ́ ko yí gbè ná lɛ é nɔ yì azɔ̌xwé amasin tɔn mɛ ɖéɖé. Azɔnwlémɛtɔ́ ɔ ɖó ná yí amasin tɔn lɛ hwɛcɛ.",
+        "couleur": "#8e44ad"
+      },
+      {
+        "icon": "🔒",
+        "titre": "Kúnkan lɛ sín hwɛndomɛ",
+        "description": "Kúnkan azɔnwlémɛ towe lɛ bǐ nyí chiffrées bɔ è nɔ bɔ hwɛndomɛ ná. Mɛɖé lɛ kɛ́n ɖó ná mɔ wemá towe: azɔ̌tɔ́ è è yí gbè ná lɛ kɛ́n wɛ ɖó ná mɔ wemá towe.",
+        "couleur": "#f39c12"
+      }
+    ],
+    "cards": [
+      {
+        "title": "Kpɔ́nkpɔn hwɛhuhu tɔn",
+        "text": "Kpɔ́n kúnkan towe lɛ ɖò hwɛhuhu mɛ."
+      },
+      {
+        "title": "Hwɛndomɛ sín mɛmá",
+        "text": "Mɛɖé kɛ́n wɛ ɖó ná mɔ nǔ ná azɔnwlémɛtɔ́ kpó azɔ̌xwé amasin tɔn kpó."
+      },
+      {
+        "title": "IA sín alɔkpa",
+        "text": "Alɔkpa intelligentes è nɔ yì hwénù è anomaly lɛ ɖò è."
+      }
+    ]
+  }
+}

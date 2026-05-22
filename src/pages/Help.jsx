@@ -20,8 +20,7 @@ export default function Help() {
     },
     {
       question: "Que faire en cas d'alerte ?",
-      reponse: "En cas d'alerte critique détectée par notre IA, une notification vous est envoyée. Contactez immédiatement votre médecin via la messagerie ou appelez les services d'urgence si nécessaire."
-    },
+      reponse: "En cas d'alerte critique détectée par notre IA, une notification vous est envoyée.Ne vous inquiétez pas le médecin a reçu la meme alerte, donc il devrait réagir immédiatement."    },
     {
       question: "Comment un médecin accède-t-il à la plateforme ?",
       reponse: "Les comptes médecins sont créés par l'administrateur de la plateforme. Le médecin reçoit ses identifiants par email et peut se connecter directement via la page Connexion."
@@ -49,54 +48,42 @@ export default function Help() {
       <section style={styles.cardsSection}>
         <div style={styles.cardsGrid}>
           <div style={styles.card}>
-            <div style={{...styles.cardIconBox, backgroundColor: '#e8f0ff'}}>
-              <span style={styles.cardIcon}>👤</span>
-            </div>
+           
             <h3 style={styles.cardTitle}>Créer un compte</h3>
             <p style={styles.cardText}>Cliquez sur Inscription, remplissez vos informations et accédez à votre espace patient.</p>
             <button style={styles.cardBtn} onClick={() => navigate('/register')}>S'inscrire →</button>
           </div>
 
           <div style={styles.card}>
-            <div style={{...styles.cardIconBox, backgroundColor: '#e8fff2'}}>
-              <span style={styles.cardIcon}>🔑</span>
-            </div>
+           
             <h3 style={styles.cardTitle}>Connexion</h3>
             <p style={styles.cardText}>Renseignez votre email et mot de passe pour accéder à votre tableau de bord.</p>
             <button style={styles.cardBtn} onClick={() => navigate('/login')}>Se connecter →</button>
           </div>
 
           <div style={styles.card}>
-            <div style={{...styles.cardIconBox, backgroundColor: '#fff8e8'}}>
-              <span style={styles.cardIcon}>📊</span>
-            </div>
+            
             <h3 style={styles.cardTitle}>Tableau de bord</h3>
             <p style={styles.cardText}>Accédez à votre espace personnalisé selon votre rôle : patient, médecin ou pharmacie.</p>
             <button style={styles.cardBtn} onClick={() => navigate('/login')}>Accéder →</button>
           </div>
 
           <div style={styles.card}>
-            <div style={{...styles.cardIconBox, backgroundColor: '#ffe8e8'}}>
-              <span style={styles.cardIcon}>🔔</span>
-            </div>
+           
             <h3 style={styles.cardTitle}>Alertes IA</h3>
             <p style={styles.cardText}>Notre IA détecte automatiquement les anomalies et envoie des alertes en temps réel.</p>
             <button style={styles.cardBtn}>En savoir plus →</button>
           </div>
 
           <div style={styles.card}>
-            <div style={{...styles.cardIconBox, backgroundColor: '#f0e8ff'}}>
-              <span style={styles.cardIcon}>💊</span>
-            </div>
+           
             <h3 style={styles.cardTitle}>Pharmacie</h3>
             <p style={styles.cardText}>Les ordonnances validées sont transmises directement à votre pharmacie partenaire.</p>
             <button style={styles.cardBtn}>En savoir plus →</button>
           </div>
 
           <div style={styles.card}>
-            <div style={{...styles.cardIconBox, backgroundColor: '#e8f8ff'}}>
-              <span style={styles.cardIcon}>💬</span>
-            </div>
+           
             <h3 style={styles.cardTitle}>Support</h3>
             <p style={styles.cardText}>Écrivez-nous à support@healthtech.com ou utilisez le formulaire de contact.</p>
             <button style={styles.cardBtn} onClick={() => navigate('/contact')}>Nous contacter →</button>

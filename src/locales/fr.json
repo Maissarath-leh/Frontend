@@ -1,0 +1,84 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "about": "À propos",
+    "contact": "Contact",
+    "help": "Aide",
+    "login": "Connexion",
+    "register": "Inscription",
+    "brand": "HealthTech"
+  },
+  "home": {
+    "title": "HealthTech",
+    "subtitle": "Suivi médical à distance, simple et sécurisé.",
+    "slogans": [
+      "Votre santé, notre priorité.",
+      "Connectez-vous à vos médecins en temps réel.",
+      "La télésurveillance au service de votre bien-être."
+    ],
+    "stats_patients": "Patients",
+    "stats_doctors": "Médecins",
+    "stats_available": "Disponible",
+    "btn_login": "Connexion",
+    "btn_register": "Inscription",
+    "scroll": "Découvrir",
+    "about_title": "Comment fonctionne HealthTech ?",
+    "about_subtitle": "Une plateforme complète de télésurveillance médicale",
+    "contact_title": "Nous contacter",
+    "contact_subtitle": "Une question ? Nous sommes là pour vous aider.",
+    "contact_btn": "📨 Accéder au formulaire de contact",
+    "footer": "© 2026 HealthTech — Projet de télésurveillance médicale par Martine & Maissaratou",
+    "carousel": [
+      {
+        "icon": "📡",
+        "titre": "Collecte des données",
+        "description": "Des capteurs connectés mesurent en temps réel vos constantes vitales : tension artérielle, pouls, poids et température. Les données sont transmises automatiquement à la plateforme.",
+        "couleur": "#1266f7"
+      },
+      {
+        "icon": "🏥",
+        "titre": "Suivi médical",
+        "description": "Votre médecin accède à votre dossier médical complet depuis son tableau de bord. Il peut consulter l'historique de vos mesures et suivre l'évolution de votre état de santé.",
+        "couleur": "#0a1f5c"
+      },
+      {
+        "icon": "🤖",
+        "titre": "Intelligence Artificielle",
+        "description": "Notre module IA analyse en permanence vos données médicales. Dès qu'une anomalie est détectée (tension trop élevée, pouls anormal), une alerte est envoyée automatiquement.",
+        "couleur": "#27ae60"
+      },
+      {
+        "icon": "🔔",
+        "titre": "Alertes automatiques",
+        "description": "En cas de situation critique, le patient et le médecin reçoivent une notification immédiate. Le médecin peut agir rapidement sans attendre la prochaine consultation.",
+        "couleur": "#e74c3c"
+      },
+      {
+        "icon": "💊",
+        "titre": "Lien avec la pharmacie",
+        "description": "Les ordonnances validées par le médecin sont transmises directement à la pharmacie partenaire. Le patient peut récupérer ses médicaments sans délai.",
+        "couleur": "#8e44ad"
+      },
+      {
+        "icon": "🔒",
+        "titre": "Sécurité des données",
+        "description": "Toutes vos données médicales sont chiffrées et protégées. L'accès est contrôlé par rôle : seuls les professionnels autorisés peuvent consulter votre dossier.",
+        "couleur": "#f39c12"
+      }
+    ],
+    "cards": [
+      {
+        "title": "Suivi en temps réel",
+        "text": "Visualisez vos constantes en un coup d'œil."
+      },
+      {
+        "title": "Partage sécurisé",
+        "text": "Accès contrôlé pour médecins et pharmacies."
+      },
+      {
+        "title": "Alerte IA",
+        "text": "Notifications intelligentes des anomalies détectées."
+      }
+    ]
+  }
+}

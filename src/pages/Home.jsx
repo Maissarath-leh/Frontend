@@ -1,11 +1,17 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 export default function Home() {
+  const { t, ready } = useTranslation();
   const navigate = useNavigate();
   const [sloganIndex, setSloganIndex] = useState(0);
   const [visible, setVisible] = useState(true);
   const [carouselIndex, setCarouselIndex] = useState(0);
+
+  if (!ready) {
+    return <div style={{ color: 'white', textAlign: 'center', padding: '100px' }}>Chargement...</div>;
+  }
 
   const slogans = [
     "Votre santé, notre priorité.",
@@ -77,7 +83,7 @@ export default function Home() {
         <div style={styles.leftGradient} />
         <div style={styles.heroContent}>
           <div style={styles.leftSection}>
-            <h1 style={styles.title}>HealthTech</h1>
+            <h1 style={styles.title}>{t('home.title')}</h1>
             <p style={{
               ...styles.slogan,
               opacity: visible ? 1 : 0,
@@ -85,29 +91,29 @@ export default function Home() {
             }}>
               {slogans[sloganIndex]}
             </p>
-            <p style={styles.subtitle}>Suivi médical à distance, simple et sécurisé.</p>
+            <p style={styles.subtitle}>{t('home.subtitle')}</p>
             <div style={styles.stats}>
               <div style={styles.statItem}>
                 <span style={styles.statNumber}>1000+</span>
-                <span style={styles.statLabel}>Patients</span>
+                <span style={styles.statLabel}>{t('home.stats_patients')}</span>
               </div>
               <div style={styles.statDivider} />
               <div style={styles.statItem}>
                 <span style={styles.statNumber}>50+</span>
-                <span style={styles.statLabel}>Médecins</span>
+                <span style={styles.statLabel}>{t('home.stats_doctors')}</span>
               </div>
               <div style={styles.statDivider} />
               <div style={styles.statItem}>
                 <span style={styles.statNumber}>24/7</span>
-                <span style={styles.statLabel}>Disponible</span>
+                <span style={styles.statLabel}>{t('home.stats_available')}</span>
               </div>
             </div>
             <div style={styles.buttons}>
               <button style={styles.btnPrimary} onClick={() => navigate('/login')}>
-                Connexion
+                {t('home.btn_login')}
               </button>
               <button style={styles.btnOutline} onClick={() => navigate('/register')}>
-                Inscription
+                {t('home.btn_register')}
               </button>
             </div>
           </div>
@@ -129,7 +135,7 @@ export default function Home() {
         </div>
 
         <div style={styles.scrollIndicator} onClick={() => document.getElementById('about').scrollIntoView({behavior: 'smooth'})}>
-          <span style={styles.scrollText}>Découvrir</span>
+          <span style={styles.scrollText}>{t('home.scroll')}</span>
           <span style={styles.scrollArrow}>↓</span>
         </div>
       </section>
@@ -137,8 +143,8 @@ export default function Home() {
       {/* SECTION À PROPOS — CAROUSEL */}
       <section id="about" style={styles.aboutSection}>
         <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>Comment fonctionne HealthTech ?</h2>
-          <p style={styles.sectionSubtitle}>Une plateforme complète de télésurveillance médicale</p>
+          <h2 style={styles.sectionTitle}>{t('home.about_title')}</h2>
+          <p style={styles.sectionSubtitle}>{t('home.about_subtitle')}</p>
         </div>
 
         <div style={styles.carouselContainer}>
@@ -212,17 +218,17 @@ export default function Home() {
 {/* SECTION CONTACT */}
 <section id="contact" style={styles.contactSection}>
   <h2 style={{color: 'white', fontSize: '32px', fontWeight: 'bold', margin: '0 0 12px'}}>
-    Nous contacter
+    {t('home.contact_title')}
   </h2>
   <p style={{color: 'rgba(255,255,255,0.8)', fontSize: '16px', margin: '0 0 32px'}}>
-    Une question ? Nous sommes là pour vous aider.
+    {t('home.contact_subtitle')}
   </p>
   <button style={styles.btnPrimary} onClick={() => navigate('/contact')}>
-    📨 Accéder au formulaire de contact
+    {t('home.contact_btn')}
   </button>
 </section>
      <footer style={styles.footer}>
-  <p style={styles.footerCopy}>© 2026 HealthTech — Projet de télésurveillance médicale par Martine & Maissaratou</p>
+  <p style={styles.footerCopy}>{t('home.footer')}</p>
 </footer>
 
     </div>

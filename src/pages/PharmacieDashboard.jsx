@@ -1,10 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 export default function PharmacieDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [ordonnances, setOrdonnances] = useState([]);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    fetchOrdonnances();
+  }, []);
+
+  const fetchOrdonnances = async () => {
+    try {
+      const res = await api.get('/ordonnances');
+      setOrdonnances(res.data);
+    } catch (err) {
+      console.error('Erreur chargement ordonnances:', err);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -12,31 +27,52 @@ export default function PharmacieDashboard() {
     navigate('/');
   };
 
-  const [ordonnances, setOrdonnances] = useState([
-    { id: 1, patient: 'Sona TANIA', medecin: 'Dr. Dupont', medicaments: 'Paracétamol 500mg, Ibuprofène 400mg', instructions: '1 comprimé matin et soir', date_prescription: '28/03/2026', date_expiration: '28/04/2026', statut: 'en_attente' },
-    { id: 2, patient: 'Julien Martin', medecin: 'Dr. Karim', medicaments: 'Amoxicilline 1g, Doliprane 1000mg', instructions: '3 fois par jour pendant 7 jours', date_prescription: '27/03/2026', date_expiration: '27/04/2026', statut: 'validee' },
-    { id: 3, patient: 'Sandrine Dupont', medecin: 'Dr. Dupont', medicaments: 'Metformine 500mg', instructions: 'Pendant les repas', date_prescription: '25/03/2026', date_expiration: '25/04/2026', statut: 'refusee' },
-  ]);
-
-  const updateStatut = (id, newStatut) => {
-    setOrdonnances(prev => prev.map(o => o.id === id ? {...o, statut: newStatut} : o));
+  const handlePrendreEnCharge = async (id) => {
+    try {
+      await api.patch(`/ordonnances/${id}/prendre-en-charge`);
+      fetchOrdonnances();
+    } catch (err) {
+      alert('Erreur lors de la prise en charge.');
+    }
   };
+
+  const handleValider = async (id) => {
+    try {
+      await api.patch(`/ordonnances/${id}/valider`, { statut: 'validee' });
+      fetchOrdonnances();
+    } catch (err) {
+      alert('Erreur lors de la validation.');
+    }
+  };
+
+  const handleRefuser = async (id) => {
+    const motif = prompt('Motif du refus :');
+    if (!motif) return;
+    try {
+      await api.patch(`/ordonnances/${id}/valider`, { statut: 'refusee', motif_refus: motif });
+      fetchOrdonnances();
+    } catch (err) {
+      alert('Erreur lors du refus.');
+    }
+  };
+
+  const enAttente = ordonnances.filter(o => o.statut === 'en_attente').length;
+  const validees = ordonnances.filter(o => o.statut === 'validee').length;
+  const refusees = ordonnances.filter(o => o.statut === 'refusee').length;
 
   const getBadgeStyle = (statut) => {
     if (statut === 'validee') return styles.badgeOk;
     if (statut === 'refusee') return styles.badgeAlert;
+    if (statut === 'prise_en_charge') return styles.badgePending;
     return styles.badgePending;
   };
 
   const getStatutLabel = (statut) => {
     if (statut === 'validee') return '✅ Validée';
     if (statut === 'refusee') return '❌ Refusée';
+    if (statut === 'prise_en_charge') return '📋 Prise en charge';
     return '⏳ En attente';
   };
-
-  const enAttente = ordonnances.filter(o => o.statut === 'en_attente').length;
-  const validees = ordonnances.filter(o => o.statut === 'validee').length;
-  const refusees = ordonnances.filter(o => o.statut === 'refusee').length;
 
   const OrdonnanceTable = ({ data }) => (
     <table style={styles.table}>
@@ -45,9 +81,8 @@ export default function PharmacieDashboard() {
           <th style={styles.th}>Patient</th>
           <th style={styles.th}>Médecin</th>
           <th style={styles.th}>Médicaments</th>
-          <th style={styles.th}>Instructions</th>
-          <th style={styles.th}>Date prescription</th>
-          <th style={styles.th}>Expiration</th>
+          <th style={styles.th}>Posologie</th>
+          <th style={styles.th}>Date</th>
           <th style={styles.th}>Statut</th>
           <th style={styles.th}>Action</th>
         </tr>
@@ -56,22 +91,32 @@ export default function PharmacieDashboard() {
         {data.map((o) => (
           <tr key={o.id} style={styles.tr}>
             <td style={styles.td}>
-              <span style={styles.avatar2}>{o.patient.charAt(0)}</span>
-              {o.patient}
+              <span style={styles.avatar2}>{o.patient?.user?.prenom?.charAt(0) || 'P'}</span>
+              {o.patient?.user?.prenom} {o.patient?.user?.nom}
             </td>
-            <td style={styles.td}>{o.medecin}</td>
-            <td style={styles.td}>{o.medicaments}</td>
-            <td style={styles.td}>{o.instructions}</td>
-            <td style={styles.td}>{o.date_prescription}</td>
-            <td style={styles.td}>{o.date_expiration}</td>
+            <td style={styles.td}>Dr. {o.medecin?.user?.prenom} {o.medecin?.user?.nom}</td>
+            <td style={styles.td}>
+              {o.contenu?.map((c, i) => (
+                <span key={i}>{c.medicament}{i < o.contenu.length - 1 ? ', ' : ''}</span>
+              ))}
+            </td>
+            <td style={styles.td}>
+              {o.contenu?.map((c, i) => (
+                <span key={i}>{c.posologie} ({c.duree}){i < o.contenu.length - 1 ? ' | ' : ''}</span>
+              ))}
+            </td>
+            <td style={styles.td}>{new Date(o.created_at).toLocaleDateString('fr-FR')}</td>
             <td style={styles.td}>
               <span style={getBadgeStyle(o.statut)}>{getStatutLabel(o.statut)}</span>
             </td>
             <td style={styles.td}>
               {o.statut === 'en_attente' && (
+                <button style={styles.btnValider} onClick={() => handlePrendreEnCharge(o.id)}>📋 Prendre en charge</button>
+              )}
+              {o.statut === 'prise_en_charge' && (
                 <div style={{display: 'flex', gap: '6px'}}>
-                  <button style={styles.btnValider} onClick={() => updateStatut(o.id, 'validee')}>✅ Valider</button>
-                  <button style={styles.btnRefuser} onClick={() => updateStatut(o.id, 'refusee')}>❌ Refuser</button>
+                  <button style={styles.btnValider} onClick={() => handleValider(o.id)}>✅ Valider</button>
+                  <button style={styles.btnRefuser} onClick={() => handleRefuser(o.id)}>❌ Refuser</button>
                 </div>
               )}
             </td>
@@ -129,74 +174,24 @@ export default function PharmacieDashboard() {
         {activeTab === 'dashboard' && (
           <div style={styles.content}>
             <div style={styles.cardsRow}>
-              <div style={styles.card}>
-                <div style={styles.cardIcon}>📋</div>
-                <div>
-                  <p style={styles.cardLabel}>Total ordonnances</p>
-                  <p style={styles.cardValue}>{ordonnances.length}</p>
-                </div>
-                <div style={{...styles.cardBar, backgroundColor: '#1266f7'}} />
-              </div>
-              <div style={styles.card}>
-                <div style={styles.cardIcon}>⏳</div>
-                <div>
-                  <p style={styles.cardLabel}>En attente</p>
-                  <p style={{...styles.cardValue, color: '#f39c12'}}>{enAttente}</p>
-                </div>
-                <div style={{...styles.cardBar, backgroundColor: '#f39c12'}} />
-              </div>
-              <div style={styles.card}>
-                <div style={styles.cardIcon}>✅</div>
-                <div>
-                  <p style={styles.cardLabel}>Validées</p>
-                  <p style={{...styles.cardValue, color: '#27ae60'}}>{validees}</p>
-                </div>
-                <div style={{...styles.cardBar, backgroundColor: '#27ae60'}} />
-              </div>
-              <div style={{...styles.card, border: '1px solid #fde8e8'}}>
-                <div style={styles.cardIcon}>❌</div>
-                <div>
-                  <p style={styles.cardLabel}>Refusées</p>
-                  <p style={{...styles.cardValue, color: '#e74c3c'}}>{refusees}</p>
-                </div>
-                <div style={{...styles.cardBar, backgroundColor: '#e74c3c'}} />
-              </div>
+              <div style={styles.card}><div style={styles.cardIcon}>📋</div><div><p style={styles.cardLabel}>Total ordonnances</p><p style={styles.cardValue}>{ordonnances.length}</p></div><div style={{...styles.cardBar, backgroundColor: '#1266f7'}} /></div>
+              <div style={styles.card}><div style={styles.cardIcon}>⏳</div><div><p style={styles.cardLabel}>En attente</p><p style={{...styles.cardValue, color: '#f39c12'}}>{enAttente}</p></div><div style={{...styles.cardBar, backgroundColor: '#f39c12'}} /></div>
+              <div style={styles.card}><div style={styles.cardIcon}>✅</div><div><p style={styles.cardLabel}>Validées</p><p style={{...styles.cardValue, color: '#27ae60'}}>{validees}</p></div><div style={{...styles.cardBar, backgroundColor: '#27ae60'}} /></div>
+              <div style={{...styles.card, border: '1px solid #fde8e8'}}><div style={styles.cardIcon}>❌</div><div><p style={styles.cardLabel}>Refusées</p><p style={{...styles.cardValue, color: '#e74c3c'}}>{refusees}</p></div><div style={{...styles.cardBar, backgroundColor: '#e74c3c'}} /></div>
             </div>
-
-            <div style={styles.tableSection}>
-              <h2 style={styles.sectionTitle}>Toutes les ordonnances</h2>
-              <OrdonnanceTable data={ordonnances} />
-            </div>
+            <div style={styles.tableSection}><h2 style={styles.sectionTitle}>Toutes les ordonnances</h2><OrdonnanceTable data={ordonnances} /></div>
           </div>
         )}
 
         {activeTab === 'en_attente' && (
-          <div style={styles.content}>
-            <div style={styles.tableSection}>
-              <h2 style={styles.sectionTitle}>Ordonnances en attente</h2>
-              <OrdonnanceTable data={ordonnances.filter(o => o.statut === 'en_attente')} />
-            </div>
-          </div>
+          <div style={styles.content}><div style={styles.tableSection}><h2 style={styles.sectionTitle}>Ordonnances en attente</h2><OrdonnanceTable data={ordonnances.filter(o => o.statut === 'en_attente')} /></div></div>
         )}
-
         {activeTab === 'validees' && (
-          <div style={styles.content}>
-            <div style={styles.tableSection}>
-              <h2 style={styles.sectionTitle}>Ordonnances validées</h2>
-              <OrdonnanceTable data={ordonnances.filter(o => o.statut === 'validee')} />
-            </div>
-          </div>
+          <div style={styles.content}><div style={styles.tableSection}><h2 style={styles.sectionTitle}>Ordonnances validées</h2><OrdonnanceTable data={ordonnances.filter(o => o.statut === 'validee')} /></div></div>
         )}
-
         {activeTab === 'refusees' && (
-          <div style={styles.content}>
-            <div style={styles.tableSection}>
-              <h2 style={styles.sectionTitle}>Ordonnances refusées</h2>
-              <OrdonnanceTable data={ordonnances.filter(o => o.statut === 'refusee')} />
-            </div>
-          </div>
+          <div style={styles.content}><div style={styles.tableSection}><h2 style={styles.sectionTitle}>Ordonnances refusées</h2><OrdonnanceTable data={ordonnances.filter(o => o.statut === 'refusee')} /></div></div>
         )}
-
       </div>
     </div>
   );
@@ -212,9 +207,9 @@ const styles = {
   avatar2: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#1266f7', color: 'white', fontSize: '14px', fontWeight: 'bold', marginRight: '10px' },
   pharmacieName: { color: 'white', fontWeight: '600', fontSize: '14px', margin: 0, textAlign: 'center' },
   pharmacieRole: { color: 'rgba(255,255,255,0.6)', fontSize: '12px', margin: '4px 0 0' },
-  sidebarNav: { display: 'flex', flexDirection: 'column', gap: '4px', padding: '20px 12px', flexGrow: 1, opacity: 1, transform: 'none', position: 'static', pointerEvents: 'auto' },
-  navItem: { padding: '12px 16px', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '14px', whiteSpace: 'nowrap' },
-  navItemActive: { padding: '12px 16px', borderRadius: '10px', color: 'white', backgroundColor: '#1266f7', cursor: 'pointer', fontSize: '14px', fontWeight: '600', whiteSpace: 'nowrap' },
+  sidebarNav: { display: 'flex', flexDirection: 'column', gap: '4px', padding: '20px 12px', flexGrow: 1 },
+  navItem: { padding: '12px 16px', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '14px' },
+  navItemActive: { padding: '12px 16px', borderRadius: '10px', color: 'white', backgroundColor: '#1266f7', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
   logoutBtn: { margin: '0 12px', padding: '12px 16px', borderRadius: '10px', border: 'none', backgroundColor: 'rgba(231, 76, 60, 0.2)', color: '#e74c3c', cursor: 'pointer', fontSize: '14px', fontWeight: '600', textAlign: 'left' },
   main: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 30px', backgroundColor: 'white', borderBottom: '1px solid #e8ecf0' },

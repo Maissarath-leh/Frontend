@@ -1,12 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 export default function PatientDashboard() {
   const [showVideo, setShowVideo] = useState(false);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [mesures, setMesures] = useState([]);
+  const [alertes, setAlertes] = useState([]);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    fetchMesures();
+    fetchAlertes();
+  }, []);
+
+  const fetchMesures = async () => {
+    try {
+      const res = await api.get('/patient/mes-mesures');
+      setMesures(res.data);
+    } catch (err) { console.error('Erreur mesures:', err); }
+  };
+
+  const fetchAlertes = async () => {
+    try {
+      const res = await api.get('/patient/mes-alertes');
+      setAlertes(res.data);
+    } catch (err) { console.error('Erreur alertes:', err); }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -14,16 +36,8 @@ export default function PatientDashboard() {
     navigate('/');
   };
 
-  const consultData = [
-    { date: '28/03/2026', tension: '12/7', poids: '72 kg', pouls: '72 bpm', statut: 'Stable' },
-    { date: '21/03/2026', tension: '13/8', poids: '72.5 kg', pouls: '78 bpm', statut: 'Surveillance' },
-    { date: '14/03/2026', tension: '12/8', poids: '73 kg', pouls: '70 bpm', statut: 'Stable' },
-  ];
-
-  const alertes = [
-    { message: 'Tension légèrement élevée', date: '28/03/2026', niveau: 'warning' },
-    { message: 'Prochaine visite dans 7 jours', date: '05/04/2026', niveau: 'info' },
-  ];
+  const derniereMesure = mesures[0] || {};
+  const nbAlertes = alertes.filter(a => !a.vue).length;
 
   const roomName = `HealthTech-${(user.nom || 'Patient').replace(/\s+/g, '-')}-${(user.prenom || '').replace(/\s+/g, '-')}`;
 
@@ -62,29 +76,28 @@ export default function PatientDashboard() {
 
         <div style={styles.sidebarNav}>
           <div style={activeTab === 'dashboard' ? styles.navItemActive : styles.navItem} onClick={() => setActiveTab('dashboard')}>
-             Tableau de bord
+            🏠 Tableau de bord
           </div>
           <div style={activeTab === 'mesures' ? styles.navItemActive : styles.navItem} onClick={() => setActiveTab('mesures')}>
-             Mes mesures
+            📊 Mes mesures
           </div>
           <div style={activeTab === 'alertes' ? styles.navItemActive : styles.navItem} onClick={() => setActiveTab('alertes')}>
-             Alertes
+            🔔 Alertes
           </div>
           <div style={activeTab === 'historique' ? styles.navItemActive : styles.navItem} onClick={() => setActiveTab('historique')}>
-             Historique
+            📋 Historique
           </div>
           <div style={activeTab === 'profil' ? styles.navItemActive : styles.navItem} onClick={() => setActiveTab('profil')}>
             👤 Mon profil
           </div>
 
-          {/* BOUTON APPEL */}
           <div style={styles.btnAppel} onClick={() => setShowVideo(true)}>
-             Appeler mon médecin
+            📹 Appeler mon médecin
           </div>
         </div>
 
         <button style={styles.logoutBtn} onClick={handleLogout}>
-           Déconnexion
+          🚪 Déconnexion
         </button>
       </aside>
 
@@ -103,7 +116,7 @@ export default function PatientDashboard() {
           </div>
           <div style={styles.headerRight}>
             <div style={styles.alertBadge}>
-              🔔 <span style={styles.badgeCount}>2</span> alertes
+              🔔 <span style={styles.badgeCount}>{nbAlertes}</span> alerte{nbAlertes > 1 ? 's' : ''}
             </div>
             <div style={styles.patientBadge}>
               👤 {user.prenom} {user.nom}
@@ -118,31 +131,31 @@ export default function PatientDashboard() {
                 <div style={styles.cardIcon}>❤️</div>
                 <div>
                   <p style={styles.cardLabel}>Dernière tension</p>
-                  <p style={styles.cardValue}>12/7</p>
+                  <p style={styles.cardValue}>{derniereMesure.tension_systolique ? derniereMesure.tension_systolique + '/' + derniereMesure.tension_diastolique : '—'}</p>
                 </div>
                 <div style={{...styles.cardBar, backgroundColor: '#1266f7'}} />
               </div>
               <div style={styles.card}>
-                <div style={styles.cardIcon}>⚖️</div>
+                <div style={styles.cardIcon}>🌡️</div>
                 <div>
-                  <p style={styles.cardLabel}>Poids</p>
-                  <p style={styles.cardValue}>72 kg</p>
+                  <p style={styles.cardLabel}>Température</p>
+                  <p style={styles.cardValue}>{derniereMesure.temperature ? derniereMesure.temperature + ' °C' : '—'}</p>
                 </div>
                 <div style={{...styles.cardBar, backgroundColor: '#0a1f5c'}} />
               </div>
               <div style={styles.card}>
                 <div style={styles.cardIcon}>💓</div>
                 <div>
-                  <p style={styles.cardLabel}>Pouls</p>
-                  <p style={styles.cardValue}>72 bpm</p>
+                  <p style={styles.cardLabel}>Fréquence cardiaque</p>
+                  <p style={styles.cardValue}>{derniereMesure.frequence_cardiaque ? derniereMesure.frequence_cardiaque + ' bpm' : '—'}</p>
                 </div>
                 <div style={{...styles.cardBar, backgroundColor: '#27ae60'}} />
               </div>
               <div style={{...styles.card, border: '1px solid #fde8e8'}}>
-                <div style={styles.cardIcon}>📅</div>
+                <div style={styles.cardIcon}>🫁</div>
                 <div>
-                  <p style={styles.cardLabel}>Prochaine visite</p>
-                  <p style={{...styles.cardValue, fontSize: '18px', color: '#e74c3c'}}>05/04/2026</p>
+                  <p style={styles.cardLabel}>SpO₂</p>
+                  <p style={{...styles.cardValue, color: '#e74c3c'}}>{derniereMesure.saturation_oxygene ? derniereMesure.saturation_oxygene + ' %' : '—'}</p>
                 </div>
                 <div style={{...styles.cardBar, backgroundColor: '#e74c3c'}} />
               </div>
@@ -156,40 +169,44 @@ export default function PatientDashboard() {
                     <tr style={styles.tableHead}>
                       <th style={styles.th}>Date</th>
                       <th style={styles.th}>Tension</th>
-                      <th style={styles.th}>Poids</th>
-                      <th style={styles.th}>Pouls</th>
-                      <th style={styles.th}>Statut</th>
+                      <th style={styles.th}>FC</th>
+                      <th style={styles.th}>Temp.</th>
+                      <th style={styles.th}>SpO₂</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {consultData.map((item, index) => (
-                      <tr key={index} style={styles.tr}>
-                        <td style={styles.td}>{item.date}</td>
-                        <td style={styles.td}>{item.tension}</td>
-                        <td style={styles.td}>{item.poids}</td>
-                        <td style={styles.td}>{item.pouls}</td>
-                        <td style={styles.td}>
-                          <span style={item.statut === 'Stable' ? styles.badgeOk : styles.badgeWarning}>
-                            {item.statut}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {mesures.length === 0 ? (
+                      <tr><td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td></tr>
+                    ) : (
+                      mesures.slice(0, 5).map((m, i) => (
+                        <tr key={i} style={styles.tr}>
+                          <td style={styles.td}>{new Date(m.date_heure).toLocaleString('fr-FR')}</td>
+                          <td style={styles.td}>{m.tension_systolique}/{m.tension_diastolique}</td>
+                          <td style={styles.td}>{m.frequence_cardiaque} bpm</td>
+                          <td style={styles.td}>{m.temperature} °C</td>
+                          <td style={styles.td}>{m.saturation_oxygene} %</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </section>
 
               <section style={styles.alertPanel}>
                 <h2 style={styles.sectionTitle}>Mes alertes</h2>
-                {alertes.map((alerte, i) => (
-                  <div key={i} style={styles.alertItem}>
-                    <div style={{...styles.alertDot, backgroundColor: alerte.niveau === 'warning' ? '#e74c3c' : '#1266f7'}} />
-                    <div>
-                      <p style={styles.alertMsg}>{alerte.message}</p>
-                      <p style={styles.alertTime}>{alerte.date}</p>
+                {alertes.length === 0 ? (
+                  <p style={{color: '#7f8c8d', fontSize: '13px'}}>Aucune alerte pour le moment.</p>
+                ) : (
+                  alertes.slice(0, 5).map((a, i) => (
+                    <div key={i} style={styles.alertItem}>
+                      <div style={{...styles.alertDot, backgroundColor: '#e74c3c'}} />
+                      <div>
+                        <p style={styles.alertMsg}>{a.message}</p>
+                        <p style={styles.alertTime}>{new Date(a.created_at).toLocaleString('fr-FR')}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </section>
             </div>
           </div>
@@ -204,23 +221,25 @@ export default function PatientDashboard() {
                   <tr style={styles.tableHead}>
                     <th style={styles.th}>Date</th>
                     <th style={styles.th}>Tension</th>
-                    <th style={styles.th}>Poids</th>
-                    <th style={styles.th}>Pouls</th>
-                    <th style={styles.th}>Statut</th>
+                    <th style={styles.th}>FC</th>
+                    <th style={styles.th}>Temp.</th>
+                    <th style={styles.th}>SpO₂</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {consultData.map((item, index) => (
-                    <tr key={index} style={styles.tr}>
-                      <td style={styles.td}>{item.date}</td>
-                      <td style={styles.td}>{item.tension}</td>
-                      <td style={styles.td}>{item.poids}</td>
-                      <td style={styles.td}>{item.pouls}</td>
-                      <td style={styles.td}>
-                        <span style={item.statut === 'Stable' ? styles.badgeOk : styles.badgeWarning}>{item.statut}</span>
-                      </td>
-                    </tr>
-                  ))}
+                  {mesures.length === 0 ? (
+                    <tr><td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td></tr>
+                  ) : (
+                    mesures.map((m, i) => (
+                      <tr key={i} style={styles.tr}>
+                        <td style={styles.td}>{new Date(m.date_heure).toLocaleString('fr-FR')}</td>
+                        <td style={styles.td}>{m.tension_systolique}/{m.tension_diastolique}</td>
+                        <td style={styles.td}>{m.frequence_cardiaque} bpm</td>
+                        <td style={styles.td}>{m.temperature} °C</td>
+                        <td style={styles.td}>{m.saturation_oxygene} %</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -231,15 +250,19 @@ export default function PatientDashboard() {
           <div style={styles.content}>
             <div style={styles.tableSection}>
               <h2 style={styles.sectionTitle}>Toutes mes alertes</h2>
-              {alertes.map((alerte, i) => (
-                <div key={i} style={styles.alertItemFull}>
-                  <div style={{...styles.alertDot, backgroundColor: alerte.niveau === 'warning' ? '#e74c3c' : '#1266f7'}} />
-                  <div>
-                    <p style={styles.alertMsg}>{alerte.message}</p>
-                    <p style={styles.alertTime}>{alerte.date}</p>
+              {alertes.length === 0 ? (
+                <p style={{color: '#7f8c8d', fontSize: '14px'}}>Aucune alerte pour le moment.</p>
+              ) : (
+                alertes.map((a, i) => (
+                  <div key={i} style={styles.alertItemFull}>
+                    <div style={{...styles.alertDot, backgroundColor: '#e74c3c'}} />
+                    <div>
+                      <p style={styles.alertMsg}>{a.message}</p>
+                      <p style={styles.alertTime}>{new Date(a.created_at).toLocaleString('fr-FR')}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -253,23 +276,25 @@ export default function PatientDashboard() {
                   <tr style={styles.tableHead}>
                     <th style={styles.th}>Date</th>
                     <th style={styles.th}>Tension</th>
-                    <th style={styles.th}>Poids</th>
-                    <th style={styles.th}>Pouls</th>
-                    <th style={styles.th}>Statut</th>
+                    <th style={styles.th}>FC</th>
+                    <th style={styles.th}>Temp.</th>
+                    <th style={styles.th}>SpO₂</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {consultData.map((item, index) => (
-                    <tr key={index} style={styles.tr}>
-                      <td style={styles.td}>{item.date}</td>
-                      <td style={styles.td}>{item.tension}</td>
-                      <td style={styles.td}>{item.poids}</td>
-                      <td style={styles.td}>{item.pouls}</td>
-                      <td style={styles.td}>
-                        <span style={item.statut === 'Stable' ? styles.badgeOk : styles.badgeWarning}>{item.statut}</span>
-                      </td>
-                    </tr>
-                  ))}
+                  {mesures.length === 0 ? (
+                    <tr><td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td></tr>
+                  ) : (
+                    mesures.map((m, i) => (
+                      <tr key={i} style={styles.tr}>
+                        <td style={styles.td}>{new Date(m.date_heure).toLocaleString('fr-FR')}</td>
+                        <td style={styles.td}>{m.tension_systolique}/{m.tension_diastolique}</td>
+                        <td style={styles.td}>{m.frequence_cardiaque} bpm</td>
+                        <td style={styles.td}>{m.temperature} °C</td>
+                        <td style={styles.td}>{m.saturation_oxygene} %</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -304,16 +329,16 @@ const styles = {
   videoTitle: { color: 'white', margin: 0, fontSize: '16px', fontWeight: '600' },
   videoClose: { backgroundColor: '#e74c3c', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
   videoFrame: { flex: 1, border: 'none', width: '100%' },
-  sidebar: { width: '240px', backgroundColor: '#0a1f5c', display: 'flex', flexDirection: 'column', padding: '24px 0', flexShrink: 0, overflow: 'hidden' },
+  sidebar: { width: '240px', backgroundColor: '#0a1f5c', display: 'flex', flexDirection: 'column', padding: '24px 0', flexShrink: 0 },
   sidebarLogo: { display: 'flex', alignItems: 'center', gap: '10px', padding: '0 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   sidebarLogoText: { color: 'white', fontWeight: 'bold', fontSize: '18px' },
   patientInfo: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   avatar: { width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#1266f7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' },
   patientName: { color: 'white', fontWeight: '600', fontSize: '14px', margin: 0 },
   patientRole: { color: 'rgba(255,255,255,0.6)', fontSize: '12px', margin: '4px 0 0' },
-  sidebarNav: { display: 'flex', flexDirection: 'column', gap: '4px', padding: '20px 12px', flexGrow: 1, opacity: 1, transform: 'none', position: 'static', pointerEvents: 'auto' },
-  navItem: { padding: '12px 16px', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '14px', whiteSpace: 'nowrap' },
-  navItemActive: { padding: '12px 16px', borderRadius: '10px', color: 'white', backgroundColor: '#1266f7', cursor: 'pointer', fontSize: '14px', fontWeight: '600', whiteSpace: 'nowrap' },
+  sidebarNav: { display: 'flex', flexDirection: 'column', gap: '4px', padding: '20px 12px', flexGrow: 1 },
+  navItem: { padding: '12px 16px', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '14px' },
+  navItemActive: { padding: '12px 16px', borderRadius: '10px', color: 'white', backgroundColor: '#1266f7', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
   btnAppel: { margin: '8px 4px 0', padding: '12px 16px', borderRadius: '10px', backgroundColor: '#27ae60', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: '600', textAlign: 'center' },
   logoutBtn: { margin: '0 12px', padding: '12px 16px', borderRadius: '10px', border: 'none', backgroundColor: 'rgba(231, 76, 60, 0.2)', color: '#e74c3c', cursor: 'pointer', fontSize: '14px', fontWeight: '600', textAlign: 'left' },
   main: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },

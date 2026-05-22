@@ -1,0 +1,84 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact",
+    "help": "Help",
+    "login": "Login",
+    "register": "Register",
+    "brand": "HealthTech"
+  },
+  "home": {
+    "title": "HealthTech",
+    "subtitle": "Remote medical monitoring, simple and secure.",
+    "slogans": [
+      "Your health, our priority.",
+      "Connect with your doctors in real time.",
+      "Telemonitoring at the service of your well-being."
+    ],
+    "stats_patients": "Patients",
+    "stats_doctors": "Doctors",
+    "stats_available": "Available",
+    "btn_login": "Login",
+    "btn_register": "Register",
+    "scroll": "Discover",
+    "about_title": "How does HealthTech work?",
+    "about_subtitle": "A complete telemonitoring platform",
+    "contact_title": "Contact us",
+    "contact_subtitle": "A question? We are here to help.",
+    "contact_btn": "📨 Access the contact form",
+    "footer": "© 2026 HealthTech — Telemonitoring project by Martine & Maissaratou",
+    "carousel": [
+      {
+        "icon": "📡",
+        "titre": "Data Collection",
+        "description": "Connected sensors measure your vital signs in real time: blood pressure, pulse, weight and temperature. Data is transmitted automatically to the platform.",
+        "couleur": "#1266f7"
+      },
+      {
+        "icon": "🏥",
+        "titre": "Medical Monitoring",
+        "description": "Your doctor accesses your complete medical file from their dashboard. They can consult your measurement history and track your health status.",
+        "couleur": "#0a1f5c"
+      },
+      {
+        "icon": "🤖",
+        "titre": "Artificial Intelligence",
+        "description": "Our AI module continuously analyzes your medical data. When an anomaly is detected (high blood pressure, abnormal pulse), an alert is automatically sent.",
+        "couleur": "#27ae60"
+      },
+      {
+        "icon": "🔔",
+        "titre": "Automatic Alerts",
+        "description": "In critical situations, the patient and doctor receive an immediate notification. The doctor can act quickly without waiting for the next consultation.",
+        "couleur": "#e74c3c"
+      },
+      {
+        "icon": "💊",
+        "titre": "Pharmacy Link",
+        "description": "Prescriptions validated by the doctor are transmitted directly to the partner pharmacy. The patient can collect their medications without delay.",
+        "couleur": "#8e44ad"
+      },
+      {
+        "icon": "🔒",
+        "titre": "Data Security",
+        "description": "All your medical data is encrypted and protected. Access is role-controlled: only authorized professionals can view your file.",
+        "couleur": "#f39c12"
+      }
+    ],
+    "cards": [
+      {
+        "title": "Real-time Monitoring",
+        "text": "View your vitals at a glance."
+      },
+      {
+        "title": "Secure Sharing",
+        "text": "Controlled access for doctors and pharmacies."
+      },
+      {
+        "title": "AI Alert",
+        "text": "Smart notifications of detected anomalies."
+      }
+    ]
+  }
+}
