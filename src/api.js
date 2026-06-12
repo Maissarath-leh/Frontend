@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const apiPublic = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: '/api',  // ← modifié ici
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
@@ -9,7 +9,7 @@ export const apiPublic = axios.create({
 });
 
 export const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: '/api',  // ← modifié ici
   withCredentials: false,
   headers: {
     'Accept': 'application/json',
@@ -25,4 +25,5 @@ api.interceptors.request.use(config => {
   }
   return config;
 });
+
 export default api;

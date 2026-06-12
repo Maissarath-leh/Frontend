@@ -8,12 +8,12 @@ export default function MedecinDashboard() {
   const [showVideo, setShowVideo] = useState(false);
   const [showOrdonnance, setShowOrdonnance] = useState(false);
   const [formOrdonnance, setFormOrdonnance] = useState({
-  medicament: '',
-  posologie: '',
-  duree: '',
-});
-const [pharmacies, setPharmacies] = useState([]);
-const [selectedPharmacie, setSelectedPharmacie] = useState('');
+    medicament: '',
+    posologie: '',
+    duree: '',
+  });
+  const [pharmacies, setPharmacies] = useState([]);
+  const [selectedPharmacie, setSelectedPharmacie] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showDossier, setShowDossier] = useState(false);
   const [dossierSauvegarde, setDossierSauvegarde] = useState(false);
@@ -23,9 +23,21 @@ const [selectedPharmacie, setSelectedPharmacie] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
 
   const emptyForm = {
-    tension: '', pouls: '', poids: '', temperature: '',
-    glycemie: '', spo2: '', diagnostic: '', traitement: '',
-    observations: '', prochainRDV: '',
+    tension: '',
+    pouls: '',
+    poids: '',
+    temperature: '',
+    glycemie: '',
+    spo2: '',
+    blood_type: '',
+    allergies: '',
+    antecedents: '',
+    diagnostic: '',
+    traitement: '',
+    prescriptions: '',
+    hospitalizations: '',
+    observations: '',
+    prochainRDV: '',
   };
 
   const [dossierForm, setDossierForm] = useState(emptyForm);
@@ -38,113 +50,129 @@ const [selectedPharmacie, setSelectedPharmacie] = useState('');
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [patients, setPatients] = useState([]);
-const [alertes, setAlertes] = useState([]);
+  const [alertes, setAlertes] = useState([]);
   const fetchDossiers = async () => {
-  try {
-    const res = await api.get('/medical-records');
-    const patientsList = patients.length ? patients : [];
-    setDossiers(res.data.map(d => {
-      const p = patientsList.find(p => p.id === d.patient_id) || {};
-      return {
-        id: d.id,
-        patient: { 
-          nom: p.nom || ('Patient #' + d.patient_id), 
-          age: p.age || '?', 
-          statut: p.statut || 'Stable',
-          alerte: p.alerte || false,
-          dernierRDV: p.dernierRDV || '—',
-        },
-        date: new Date(d.created_at).toLocaleDateString('fr-FR'),
-        tension: '—',
-        pouls: '—',
-        temperature: '—',
-        spo2: '—',
-        diagnostic: d.diagnosis || '—',
-        traitement: d.treatment || '—',
-        observations: d.notes || '—',
-      };
-    }));
-  } catch (err) {
-    console.error('Erreur dossiers:', err);
-  }
-};
-useEffect(() => {
-  fetchPatients();
-  fetchAlertes();
-}, []);
-
-useEffect(() => {
-  if (patients.length > 0) {
-    fetchDossiers();
-  }
-}, [patients]);
-
-const handlePrescrire = async () => {
-  if (!selectedPatient || !formOrdonnance.medicament || !selectedPharmacie) return;
-  try {
-    await api.post('/ordonnances', {
-      patient_id: selectedPatient.id,
-      pharmacie_id: selectedPharmacie,
-      contenu: [{
-        medicament: formOrdonnance.medicament,
-        posologie: formOrdonnance.posologie,
-        duree: formOrdonnance.duree,
-      }],
-    });
-    alert('✅ Ordonnance envoyée à la pharmacie !');
-    setShowOrdonnance(false);
-    setFormOrdonnance({ medicament: '', posologie: '', duree: '' });
-    setSelectedPharmacie('');
-  } catch (err) {
-    alert('❌ Erreur lors de l\'envoi.');
-  }
-};
-    
-const handleSimuler = async () => {
-  try {
-    await api.post('/simulateur/generer');
-    alert('✅ Données simulées !');
+    try {
+      const res = await api.get('/medical-records');
+      const patientsList = patients.length ? patients : [];
+      const dossiersData = res.data.map(d => {
+        const p = patientsList.find(p => p.id === d.patient_id) || {};
+        return {
+          id: d.id,
+          patient_id: d.patient_id,
+          patient: {
+            id: p.id || d.patient_id,
+            nom: p.nom || `Patient ${d.patient_id}`,
+            age: p.age || '?',
+            sexe: p.sexe || 'Non renseigné',
+            statut: d.alerte ? 'Critique' : 'Stable',
+            alerte: d.alerte || false,
+            dernierRDV: d.last_appointment || '—',
+          },
+          date: new Date(d.created_at).toLocaleDateString('fr-FR'),
+          // ⬇️ Constantes vitales
+          tension: d.tension || '—',
+          pouls: d.pouls || '—',
+          temperature: d.temperature || '—',
+          spo2: d.spo2 || '—',
+          poids: d.poids || '—',
+          glycemie: d.glycemie || '—',
+          // ⬇️ Infos médicales
+          diagnostic: d.diagnosis || '—',
+          traitement: d.treatment || '—',
+          observations: d.notes || '—',
+          prochainRDV: d.next_appointment || '',
+          // ⬇️ AJOUTER CES CHAMPS MANQUANTS ⬇️
+          blood_type: d.blood_type || '—',
+          allergies: d.allergies || '—',
+          antecedents: d.antecedents || '—',
+          prescriptions: d.prescriptions || '—',
+          hospitalizations: d.hospitalizations || '—',
+        };
+      });
+      setDossiers(dossiersData);
+    } catch (err) {
+      console.error('Erreur dossiers:', err);
+    }
+  };
+  useEffect(() => {
     fetchPatients();
-  } catch (err) {
-    alert('❌ Erreur simulation.');
-  }
-};
-const fetchPharmacies = async () => {
-  try {
-    const res = await api.get('/pharmacies/liste');
-    setPharmacies(res.data);
-  } catch (err) {
-    console.error('Erreur pharmacies:', err);
-  }
-};
-const fetchAlertes = async () => {
-  try {
-    const res = await api.get('/medecin/mes-alertes');
-    setAlertes(res.data);
-  } catch (err) { console.error('Erreur alertes:', err); }
-};
-const fetchPatients = async () => {
-  try {
-    const res = await api.get('/medecin/mes-patients');
-    setPatients(res.data.map(p => ({
-      id: p.id,
-      user_id: p.user_id,
-      nom: (p.user?.prenom || '') + ' ' + (p.user?.nom || ''),
-      age: p.user?.date_naissance 
-        ? new Date().getFullYear() - new Date(p.user.date_naissance).getFullYear() 
-        : '?',
-      dernierRDV: '—',
-     tension: p.tension || '—',
-     frequence_cardiaque: p.frequence_cardiaque || '—',
-    temperature: p.temperature || '—',
-    saturation_oxygene: p.saturation_oxygene || '—',
-statut: (p.alerte || (p.saturation_oxygene && p.saturation_oxygene < 93) || (p.frequence_cardiaque && (p.frequence_cardiaque < 55 || p.frequence_cardiaque > 105))) ? 'Critique' : 'Stable',     
-alerte: (p.saturation_oxygene && p.saturation_oxygene < 93) || (p.frequence_cardiaque && (p.frequence_cardiaque < 55 || p.frequence_cardiaque > 105)),    })));
-  } catch (err) {
-    console.error('Erreur chargement patients:', err);
-  }
-};
+    fetchAlertes();
+  }, []);
 
+  useEffect(() => {
+    if (patients.length > 0) {
+      fetchDossiers();
+    }
+  }, [patients]);
+
+  const handlePrescrire = async () => {
+    if (!selectedPatient || !formOrdonnance.medicament || !selectedPharmacie) return;
+    try {
+      await api.post('/ordonnances', {
+        patient_id: selectedPatient.id,
+        pharmacie_id: selectedPharmacie,
+        contenu: [{
+          medicament: formOrdonnance.medicament,
+          posologie: formOrdonnance.posologie,
+          duree: formOrdonnance.duree,
+        }],
+      });
+      alert('✅ Ordonnance envoyée à la pharmacie !');
+      setShowOrdonnance(false);
+      setFormOrdonnance({ medicament: '', posologie: '', duree: '' });
+      setSelectedPharmacie('');
+    } catch (err) {
+      alert('❌ Erreur lors de l\'envoi.');
+    }
+  };
+
+  const handleSimuler = async () => {
+    try {
+      await api.post('/simulateur/generer');
+      alert('✅ Données simulées !');
+      fetchPatients();
+    } catch (err) {
+      alert('❌ Erreur simulation.');
+    }
+  };
+  const fetchPharmacies = async () => {
+    try {
+      const res = await api.get('/pharmacies/liste');
+      setPharmacies(res.data);
+    } catch (err) {
+      console.error('Erreur pharmacies:', err);
+    }
+  };
+  const fetchAlertes = async () => {
+    try {
+      const res = await api.get('/medecin/mes-alertes');
+      setAlertes(res.data);
+    } catch (err) { console.error('Erreur alertes:', err); }
+  };
+  const fetchPatients = async () => {
+    try {
+      const res = await api.get('/medecin/mes-patients');
+      setPatients(res.data.map(p => ({
+        id: p.id,
+        user_id: p.user_id,
+        nom: `${p.user?.prenom || ''} ${p.user?.nom || ''}`.trim() || 'Patient sans nom',
+        age: p.user?.date_naissance
+          ? new Date().getFullYear() - new Date(p.user.date_naissance).getFullYear()
+          : '?',
+        sexe: p.user?.sexe || 'Non renseigné',
+        dernierRDV: '—',
+        tension: p.tension || '—',
+        frequence_cardiaque: p.frequence_cardiaque || '—',
+        temperature: p.temperature || '—',
+        saturation_oxygene: p.saturation_oxygene || '—',
+        statut: (p.alerte || (p.saturation_oxygene && p.saturation_oxygene < 93) || (p.frequence_cardiaque && (p.frequence_cardiaque < 55 || p.frequence_cardiaque > 105))) ? 'Critique' : 'Stable',
+        alerte: (p.saturation_oxygene && p.saturation_oxygene < 93) || (p.frequence_cardiaque && (p.frequence_cardiaque < 55 || p.frequence_cardiaque > 105)),
+      })));
+    } catch (err) {
+      console.error('Erreur chargement patients:', err);
+    }
+  };
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -153,38 +181,53 @@ alerte: (p.saturation_oxygene && p.saturation_oxygene < 93) || (p.frequence_card
 
   // Ouvrir formulaire en mode création
   const handleOpenCreate = async (patient) => {
-  setSelectedPatient(patient);
-  try {
-    const res = await api.get(`/medical-records?patient_id=${patient.id}`);
-    if (res.data && res.data.length > 0) {
-      const dossier = res.data[0];
-      setDossierForm({
-        tension: dossier.tension || '',
-        pouls: dossier.pouls || '',
-        poids: dossier.poids || '',
-        temperature: dossier.temperature || '',
-        glycemie: dossier.glycemie || '',
-        spo2: dossier.spo2 || '',
-        diagnostic: dossier.diagnosis || '',
-        traitement: dossier.treatment || '',
-        observations: dossier.notes || '',
-        prochainRDV: '',
-      });
-      setDossierMode('edit');
-      setEditingIndex(dossier.id);
-    } else {
+    console.log("Patient reçu:", patient);
+
+    // Définit selectedPatient AVANT tout
+    setSelectedPatient({
+      id: patient.id,
+      nom: patient.nom || 'Patient inconnu',
+      age: patient.age || '?',
+      sexe: patient.sexe || 'Non renseigné',
+    });
+
+    try {
+      const res = await api.get(`/medical-records?patient_id=${patient.id}`);
+      if (res.data && res.data.length > 0) {
+        const dossier = res.data[0];
+        setDossierForm({
+          tension: dossier.tension || '',
+          pouls: dossier.pouls || '',
+          poids: dossier.poids || '',
+          temperature: dossier.temperature || '',
+          glycemie: dossier.glycemie || '',
+          spo2: dossier.spo2 || '',
+          diagnostic: dossier.diagnosis || '',
+          traitement: dossier.treatment || '',
+          observations: dossier.notes || '',
+          prochainRDV: dossier.next_appointment || '',
+          blood_type: dossier.blood_type || '',
+          allergies: dossier.allergies || '',
+          antecedents: dossier.antecedents || '',
+          prescriptions: dossier.prescriptions || '',
+          hospitalizations: dossier.hospitalizations || '',
+        });
+        setDossierMode('edit');
+        setEditingIndex(dossier.id);
+      } else {
+        setDossierForm(emptyForm);
+        setDossierMode('create');
+        setEditingIndex(null);
+      }
+      setShowDossier(true);
+    } catch (err) {
+      console.error('Erreur:', err);
       setDossierForm(emptyForm);
       setDossierMode('create');
       setEditingIndex(null);
+      setShowDossier(true);
     }
-    setShowDossier(true);
-  } catch (err) {
-    setDossierForm(emptyForm);
-    setDossierMode('create');
-    setEditingIndex(null);
-    setShowDossier(true);
-  }
-};
+  };
 
   // Ouvrir dossier en vue détail
   const handleViewDossier = (dossier, index) => {
@@ -201,120 +244,156 @@ alerte: (p.saturation_oxygene && p.saturation_oxygene < 93) || (p.frequence_card
       temperature: d.temperature, glycemie: d.glycemie, spo2: d.spo2,
       diagnostic: d.diagnostic, traitement: d.traitement,
       observations: d.observations, prochainRDV: d.prochainRDV,
+      blood_type: d.blood_type, allergies: d.allergies,
+      antecedents: d.antecedents, prescriptions: d.prescriptions,
+      hospitalizations: d.hospitalizations,
     };
-    const idx = d.index;
-    // Fermer vue détail puis ouvrir formulaire dans le même cycle
+    // Use the actual record id when switching to edit (fallback to index if missing)
+    const recordId = d.id || d.index;
     setViewingDossier(null);
-    setSelectedPatient(patient);
+    setSelectedPatient({
+      id: patient?.id || d.patient_id,
+      nom: patient?.nom || `Patient ${d.patient_id}`,
+      age: patient?.age || '?',
+      sexe: patient?.sexe || 'Non renseigné',
+    });
     setDossierForm(form);
     setDossierMode('edit');
-    setEditingIndex(idx);
+    setEditingIndex(recordId);
     setShowDossier(true);
   };
 
   // Ouvrir en mode édition directement depuis la liste
   const handleEditDossier = (dossier, index) => {
-    setSelectedPatient(dossier.patient);
+    setSelectedPatient({
+      id: dossier.patient_id,
+      nom: dossier.patient?.nom || `Patient ${dossier.patient_id}`,
+      age: dossier.patient?.age || '?',
+      sexe: dossier.patient?.sexe || 'Non renseigné',
+    });
     setDossierForm({
-      tension: dossier.tension, pouls: dossier.pouls, poids: dossier.poids,
-      temperature: dossier.temperature, glycemie: dossier.glycemie, spo2: dossier.spo2,
-      diagnostic: dossier.diagnostic, traitement: dossier.traitement,
-      observations: dossier.observations, prochainRDV: dossier.prochainRDV,
+      tension: dossier.tension || '',
+      pouls: dossier.pouls || '',
+      poids: dossier.poids || '',
+      temperature: dossier.temperature || '',
+      glycemie: dossier.glycemie || '',
+      spo2: dossier.spo2 || '',
+      diagnostic: dossier.diagnostic || '',
+      traitement: dossier.traitement || '',
+      observations: dossier.observations || '',
+      prochainRDV: dossier.prochainRDV || '',
+      blood_type: dossier.blood_type || '',
+      allergies: dossier.allergies || '',
+      antecedents: dossier.antecedents || '',
+      prescriptions: dossier.prescriptions || '',
+      hospitalizations: dossier.hospitalizations || '',
     });
     setDossierMode('edit');
-    setEditingIndex(index);
+    setEditingIndex(dossier.id);
     setShowDossier(true);
   };
-const handleSauvegardeDossier = async () => {
-  try {
-    let patientId = selectedPatient?.id;
-    if (!patientId && editingIndex) {
-      // Chercher le patient_id dans le dossier existant
-      const dossier = dossiers.find(d => d.id === editingIndex);
-      // Le patient_id est stocké dans les données du dossier, pas dans l'objet patient
-      patientId = dossier?.patient_id;
-    }
-    
-    const data = {
-      patient_id: patientId,
-      diagnosis: dossierForm.diagnostic,
-      treatment: dossierForm.traitement,
-      notes: dossierForm.observations,
-    };
-    
-    if (dossierMode === 'edit' && editingIndex) {
-      await api.put(`/medical-records/${editingIndex}`, {
-        ...data,
+  const handleSauvegardeDossier = async () => {
+    try {
+      const patientId = selectedPatient?.id;
+
+      if (!patientId) {
+        alert('❌ Patient non identifié');
+        return;
+      }
+
+      const data = {
+        patient_id: patientId,
         medecin_id: user.medecin?.id || user.id,
-      });
-    } else {
-      await api.post('/medical-records', {
-        ...data,
-        medecin_id: user.medecin?.id || user.id,
-      });
+        diagnosis: dossierForm.diagnostic,
+        treatment: dossierForm.traitement,
+        notes: dossierForm.observations,
+        next_appointment: dossierForm.prochainRDV,
+        // ⬇️ Ajouter toutes les constantes ⬇️
+        tension: dossierForm.tension,
+        pouls: dossierForm.pouls,
+        poids: dossierForm.poids,
+        temperature: dossierForm.temperature,
+        glycemie: dossierForm.glycemie,
+        spo2: dossierForm.spo2,
+        // ⬇️ Champs médicaux supplémentaires ⬇️
+        blood_type: dossierForm.blood_type,
+        allergies: dossierForm.allergies,
+        antecedents: dossierForm.antecedents,
+        prescriptions: dossierForm.prescriptions,
+        hospitalizations: dossierForm.hospitalizations,
+      };
+
+      if (dossierMode === 'edit' && editingIndex) {
+        // editingIndex contient l'ID du dossier
+        await api.put(`/medical-records/${editingIndex}`, data);
+        alert('✅ Dossier mis à jour avec succès !');
+      } else {
+        await api.post('/medical-records', data);
+        alert('✅ Dossier créé avec succès !');
+      }
+
+      setShowDossier(false);
+      setDossierForm(emptyForm);
+      setEditingIndex(null);
+      fetchDossiers(); // Recharger les dossiers
+      fetchPatients(); // Recharger les patients pour mettre à jour les alertes
+
+    } catch (err) {
+      console.error('Erreur sauvegarde dossier:', err);
+      alert('❌ Erreur lors de la sauvegarde : ' + (err.response?.data?.message || err.message));
     }
-    alert('✅ Dossier sauvegardé dans la base !');
-    setShowDossier(false);
-    setDossierForm(emptyForm);
-    setEditingIndex(null);
-    fetchDossiers(); // Recharger les dossiers
-  } catch (err) {
-    console.error('Erreur sauvegarde dossier:', err);
-  }
-};
-  const getStatutStyle = (statut) => {
+  }; const getStatutStyle = (statut) => {
     if (statut === 'Critique') return styles.badgeAlert;
     if (statut === 'Surveillance') return styles.badgeWarning;
     return styles.badgeOk;
   };
-
   return (
     <div style={styles.page}>
 
-{/* ── MODAL ORDONNANCE ── */}
-{showOrdonnance && selectedPatient && (
-  <div style={styles.videoOverlay}>
-    <div style={styles.dossierContainer}>
-      <div style={styles.videoHeader}>
-        <h3 style={styles.videoTitle}>💊 Nouvelle ordonnance — {selectedPatient.nom}</h3>
-        <button style={styles.videoClose} onClick={() => setShowOrdonnance(false)}>✕ Fermer</button>
-      </div>
-      <div style={styles.dossierBody}>
-        <div style={styles.dossierField}>
-          <label style={styles.dossierLabel}>Médicament</label>
-          <input style={styles.dossierInput} placeholder="Nom du médicament"
-            value={formOrdonnance.medicament}
-            onChange={(e) => setFormOrdonnance({...formOrdonnance, medicament: e.target.value})} />
+      {/* ── MODAL ORDONNANCE ── */}
+      {showOrdonnance && selectedPatient && (
+        <div style={styles.videoOverlay}>
+          <div style={styles.dossierContainer}>
+            <div style={styles.videoHeader}>
+              <h3 style={styles.videoTitle}>💊 Nouvelle ordonnance — {selectedPatient.nom}</h3>
+              <button style={styles.videoClose} onClick={() => setShowOrdonnance(false)}>✕ Fermer</button>
+            </div>
+            <div style={styles.dossierBody}>
+              <div style={styles.dossierField}>
+                <label style={styles.dossierLabel}>Médicament</label>
+                <input style={styles.dossierInput} placeholder="Nom du médicament"
+                  value={formOrdonnance.medicament}
+                  onChange={(e) => setFormOrdonnance({ ...formOrdonnance, medicament: e.target.value })} />
+              </div>
+              <div style={styles.dossierField}>
+                <label style={styles.dossierLabel}>Posologie</label>
+                <input style={styles.dossierInput} placeholder="Ex: 1 comprimé matin et soir"
+                  value={formOrdonnance.posologie}
+                  onChange={(e) => setFormOrdonnance({ ...formOrdonnance, posologie: e.target.value })} />
+              </div>
+              <div style={styles.dossierField}>
+                <label style={styles.dossierLabel}>Durée</label>
+                <input style={styles.dossierInput} placeholder="Ex: 7 jours"
+                  value={formOrdonnance.duree}
+                  onChange={(e) => setFormOrdonnance({ ...formOrdonnance, duree: e.target.value })} />
+              </div>
+              <div style={styles.dossierField}>
+                <label style={styles.dossierLabel}>Pharmacie</label>
+                <select style={styles.dossierInput} value={selectedPharmacie} onChange={(e) => setSelectedPharmacie(e.target.value)}>
+                  <option value="">-- Choisir une pharmacie --</option>
+                  {pharmacies.map((ph) => (
+                    <option key={ph.id} value={ph.id}>{ph.user?.nom || ph.nom}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.dossierActions}>
+                <button style={styles.btnAnnuler} onClick={() => setShowOrdonnance(false)}>Annuler</button>
+                <button style={styles.btnSauvegarder} onClick={handlePrescrire}>💾 Envoyer l'ordonnance</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style={styles.dossierField}>
-          <label style={styles.dossierLabel}>Posologie</label>
-          <input style={styles.dossierInput} placeholder="Ex: 1 comprimé matin et soir"
-            value={formOrdonnance.posologie}
-            onChange={(e) => setFormOrdonnance({...formOrdonnance, posologie: e.target.value})} />
-        </div>
-        <div style={styles.dossierField}>
-          <label style={styles.dossierLabel}>Durée</label>
-          <input style={styles.dossierInput} placeholder="Ex: 7 jours"
-            value={formOrdonnance.duree}
-            onChange={(e) => setFormOrdonnance({...formOrdonnance, duree: e.target.value})} />
-        </div>
-        <div style={styles.dossierField}>
-       <label style={styles.dossierLabel}>Pharmacie</label>
-       <select style={styles.dossierInput} value={selectedPharmacie} onChange={(e) => setSelectedPharmacie(e.target.value)}>
-       <option value="">-- Choisir une pharmacie --</option>
-       {pharmacies.map((ph) => (
-      <option key={ph.id} value={ph.id}>{ph.user?.nom || ph.nom}</option>
-       ))}
-     </select>
-    </div>
-        <div style={styles.dossierActions}>
-          <button style={styles.btnAnnuler} onClick={() => setShowOrdonnance(false)}>Annuler</button>
-          <button style={styles.btnSauvegarder} onClick={handlePrescrire}>💾 Envoyer l'ordonnance</button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
       {/* ── MODAL TÉLÉCONSULTATION ── */}
       {showVideo && selectedPatient && (
         <div style={styles.videoOverlay}>
@@ -336,10 +415,10 @@ const handleSauvegardeDossier = async () => {
       {/* ── MODAL DOSSIER MÉDICAL (Création / Édition) ── */}
       {showDossier && selectedPatient && (
         <div style={styles.videoOverlay}>
-          <div style={styles.dossierContainer}>
+          <div style={styles.dossierContainerLarge}>
             <div style={styles.videoHeader}>
               <h3 style={styles.videoTitle}>
-                {dossierMode === 'edit' ? '✏️ Modifier le dossier' : '📋 Nouveau dossier'} — {selectedPatient.nom}
+                📋 DOSSIER MÉDICAL - {selectedPatient.nom}
               </h3>
               <button style={styles.videoClose} onClick={() => { setShowDossier(false); setDossierForm(emptyForm); }}>
                 ✕ Fermer
@@ -347,106 +426,169 @@ const handleSauvegardeDossier = async () => {
             </div>
 
             <div style={styles.dossierBody}>
-              {dossierSauvegarde && (
-                <div style={styles.successMsg}>
-                  ✅ Dossier {dossierMode === 'edit' ? 'mis à jour' : 'sauvegardé'} avec succès !
-                </div>
-              )}
 
-              <div style={styles.dossierGrid}>
-                {/* Constantes */}
-                <div style={styles.dossierSection}>
-                  <h4 style={styles.dossierSectionTitle}>📊 Constantes vitales</h4>
-                  <div style={styles.dossierRow}>
-                    <div style={styles.dossierField}>
-                      <label style={styles.dossierLabel}>Tension artérielle</label>
-                      <input style={styles.dossierInput} type="text" placeholder="ex: 12/7"
-                        value={dossierForm.tension}
-                        onChange={(e) => setDossierForm({...dossierForm, tension: e.target.value})} />
-                    </div>
-                    <div style={styles.dossierField}>
-                      <label style={styles.dossierLabel}>Pouls (bpm)</label>
-                      <input style={styles.dossierInput} type="text" placeholder="ex: 72"
-                        value={dossierForm.pouls}
-                        onChange={(e) => setDossierForm({...dossierForm, pouls: e.target.value})} />
-                    </div>
-                  </div>
-                  <div style={styles.dossierRow}>
-                    <div style={styles.dossierField}>
-                      <label style={styles.dossierLabel}>Poids (kg)</label>
-                      <input style={styles.dossierInput} type="text" placeholder="ex: 72"
-                        value={dossierForm.poids}
-                        onChange={(e) => setDossierForm({...dossierForm, poids: e.target.value})} />
-                    </div>
-                    <div style={styles.dossierField}>
-                      <label style={styles.dossierLabel}>Température (°C)</label>
-                      <input style={styles.dossierInput} type="text" placeholder="ex: 37.5"
-                        value={dossierForm.temperature}
-                        onChange={(e) => setDossierForm({...dossierForm, temperature: e.target.value})} />
-                    </div>
-                  </div>
-                  <div style={styles.dossierRow}>
-                    <div style={styles.dossierField}>
-                      <label style={styles.dossierLabel}>Glycémie (g/L)</label>
-                      <input style={styles.dossierInput} type="text" placeholder="ex: 1.2"
-                        value={dossierForm.glycemie}
-                        onChange={(e) => setDossierForm({...dossierForm, glycemie: e.target.value})} />
-                    </div>
-                    <div style={styles.dossierField}>
-                      <label style={styles.dossierLabel}>SpO2 (%)</label>
-                      <input style={styles.dossierInput} type="text" placeholder="ex: 98"
-                        value={dossierForm.spo2}
-                        onChange={(e) => setDossierForm({...dossierForm, spo2: e.target.value})} />
-                    </div>
-                  </div>
+              {/* IDENTITÉ PATIENT (carte récapitulative) */}
+              <div style={styles.patientIdentityCard}>
+                <div style={styles.patientIdentityHeader}>
+                  <span style={styles.patientIdentityIcon}>👤</span>
+                  <span style={styles.patientIdentityTitle}>IDENTITÉ DU PATIENT</span>
                 </div>
-
-                {/* Diagnostic */}
-                <div style={styles.dossierSection}>
-                  <h4 style={styles.dossierSectionTitle}>🩺 Diagnostic et traitement</h4>
-                  <div style={styles.dossierField}>
-                    <label style={styles.dossierLabel}>Diagnostic</label>
-                    <textarea style={{...styles.dossierInput, height: '80px', resize: 'none'}}
-                      placeholder="Entrez le diagnostic..."
-                      value={dossierForm.diagnostic}
-                      onChange={(e) => setDossierForm({...dossierForm, diagnostic: e.target.value})} />
-                  </div>
-                  <div style={styles.dossierField}>
-                    <label style={styles.dossierLabel}>Traitement prescrit</label>
-                    <textarea style={{...styles.dossierInput, height: '80px', resize: 'none'}}
-                      placeholder="Entrez le traitement..."
-                      value={dossierForm.traitement}
-                      onChange={(e) => setDossierForm({...dossierForm, traitement: e.target.value})} />
-                  </div>
-                  <div style={styles.dossierField}>
-                    <label style={styles.dossierLabel}>Observations</label>
-                    <textarea style={{...styles.dossierInput, height: '80px', resize: 'none'}}
-                      placeholder="Observations supplémentaires..."
-                      value={dossierForm.observations}
-                      onChange={(e) => setDossierForm({...dossierForm, observations: e.target.value})} />
-                  </div>
-                  <div style={styles.dossierField}>
-                    <label style={styles.dossierLabel}>Prochain RDV</label>
-                    <input style={styles.dossierInput} type="date"
-                      value={dossierForm.prochainRDV}
-                      onChange={(e) => setDossierForm({...dossierForm, prochainRDV: e.target.value})} />
+                <div style={styles.patientIdentityGrid}>
+                  <div><strong>Nom complet :</strong> {selectedPatient?.nom || 'Patient inconnu'}</div>
+                  <div><strong>Âge :</strong> {selectedPatient?.age || '?'} ans</div>
+                  <div><strong>Sexe :</strong> {selectedPatient.sexe || 'Non renseigné'}</div>
+                  <div><strong>Groupe sanguin :</strong>
+                    <select style={styles.dossierInputSmall} value={dossierForm.blood_type}
+                      onChange={(e) => setDossierForm({ ...dossierForm, blood_type: e.target.value })}>
+                      <option value="">-- Sélectionner --</option>
+                      <option value="A+">A+</option><option value="A-">A-</option>
+                      <option value="B+">B+</option><option value="B-">B-</option>
+                      <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                      <option value="O+">O+</option><option value="O-">O-</option>
+                    </select>
                   </div>
                 </div>
               </div>
 
+              {/* CONSTANTES VITALES */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>📊 CONSTANTES VITALES</h4>
+                <div style={styles.constantesGrid}>
+                  <div style={styles.constanteCard}>
+                    <div style={styles.constanteIcon}>❤️</div>
+                    <div style={styles.constanteLabel}>Tension artérielle</div>
+                    <input style={styles.constanteInput} placeholder="ex: 12/8"
+                      value={dossierForm.tension}
+                      onChange={(e) => setDossierForm({ ...dossierForm, tension: e.target.value })} />
+                    <div style={styles.constanteUnit}>mmHg</div>
+                  </div>
+                  <div style={styles.constanteCard}>
+                    <div style={styles.constanteIcon}>💓</div>
+                    <div style={styles.constanteLabel}>Pouls</div>
+                    <input style={styles.constanteInput} placeholder="ex: 72"
+                      value={dossierForm.pouls}
+                      onChange={(e) => setDossierForm({ ...dossierForm, pouls: e.target.value })} />
+                    <div style={styles.constanteUnit}>bpm</div>
+                  </div>
+                  <div style={styles.constanteCard}>
+                    <div style={styles.constanteIcon}>⚖️</div>
+                    <div style={styles.constanteLabel}>Poids</div>
+                    <input style={styles.constanteInput} placeholder="ex: 75"
+                      value={dossierForm.poids}
+                      onChange={(e) => setDossierForm({ ...dossierForm, poids: e.target.value })} />
+                    <div style={styles.constanteUnit}>kg</div>
+                  </div>
+                  <div style={styles.constanteCard}>
+                    <div style={styles.constanteIcon}>🌡️</div>
+                    <div style={styles.constanteLabel}>Température</div>
+                    <input style={styles.constanteInput} placeholder="ex: 37.2"
+                      value={dossierForm.temperature}
+                      onChange={(e) => setDossierForm({ ...dossierForm, temperature: e.target.value })} />
+                    <div style={styles.constanteUnit}>°C</div>
+                  </div>
+                  <div style={styles.constanteCard}>
+                    <div style={styles.constanteIcon}>🩸</div>
+                    <div style={styles.constanteLabel}>Glycémie</div>
+                    <input style={styles.constanteInput} placeholder="ex: 1.05"
+                      value={dossierForm.glycemie}
+                      onChange={(e) => setDossierForm({ ...dossierForm, glycemie: e.target.value })} />
+                    <div style={styles.constanteUnit}>g/L</div>
+                  </div>
+                  <div style={styles.constanteCard}>
+                    <div style={styles.constanteIcon}>🫁</div>
+                    <div style={styles.constanteLabel}>SpO₂</div>
+                    <input style={styles.constanteInput} placeholder="ex: 98"
+                      value={dossierForm.spo2}
+                      onChange={(e) => setDossierForm({ ...dossierForm, spo2: e.target.value })} />
+                    <div style={styles.constanteUnit}>%</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ANTÉCÉDENTS */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>🩺 ANTÉCÉDENTS MÉDICAUX</h4>
+                <textarea style={styles.dossierTextarea}
+                  placeholder="Liste des antécédents médicaux et chirurgicaux..."
+                  value={dossierForm.antecedents}
+                  onChange={(e) => setDossierForm({ ...dossierForm, antecedents: e.target.value })} />
+              </div>
+
+              {/* ALLERGIES */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>🤧 ALLERGIES</h4>
+                <textarea style={styles.dossierTextarea}
+                  placeholder="Allergies médicamenteuses, alimentaires, etc..."
+                  value={dossierForm.allergies}
+                  onChange={(e) => setDossierForm({ ...dossierForm, allergies: e.target.value })} />
+              </div>
+
+              {/* DIAGNOSTIC */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>📝 DIAGNOSTIC ACTUEL</h4>
+                <textarea style={styles.dossierTextarea}
+                  placeholder="Diagnostic principal..."
+                  value={dossierForm.diagnostic}
+                  onChange={(e) => setDossierForm({ ...dossierForm, diagnostic: e.target.value })} />
+              </div>
+
+              {/* TRAITEMENT */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>💊 TRAITEMENT PRESCRIT</h4>
+                <textarea style={styles.dossierTextarea}
+                  placeholder="Médicaments, posologies, durée..."
+                  value={dossierForm.traitement}
+                  onChange={(e) => setDossierForm({ ...dossierForm, traitement: e.target.value })} />
+              </div>
+
+              {/* PRESCRIPTIONS */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>📋 PRESCRIPTIONS COMPLÉMENTAIRES</h4>
+                <textarea style={styles.dossierTextarea}
+                  placeholder="Examens, bilans, consultations spécialisées..."
+                  value={dossierForm.prescriptions}
+                  onChange={(e) => setDossierForm({ ...dossierForm, prescriptions: e.target.value })} />
+              </div>
+
+              {/* HOSPITALISATIONS */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>🏥 HOSPITALISATIONS</h4>
+                <textarea style={styles.dossierTextarea}
+                  placeholder="Antécédents d'hospitalisations..."
+                  value={dossierForm.hospitalizations}
+                  onChange={(e) => setDossierForm({ ...dossierForm, hospitalizations: e.target.value })} />
+              </div>
+
+              {/* OBSERVATIONS */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>📝 OBSERVATIONS DU MÉDECIN</h4>
+                <textarea style={styles.dossierTextarea}
+                  placeholder="Remarques, conseils, suivi..."
+                  value={dossierForm.observations}
+                  onChange={(e) => setDossierForm({ ...dossierForm, observations: e.target.value })} />
+              </div>
+
+              {/* PROCHAIN RENDEZ-VOUS */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>📅 PROCHAIN RENDEZ-VOUS</h4>
+                <input style={styles.dossierInputDate} type="date"
+                  value={dossierForm.prochainRDV}
+                  onChange={(e) => setDossierForm({ ...dossierForm, prochainRDV: e.target.value })} />
+              </div>
+
+              {/* ACTIONS */}
               <div style={styles.dossierActions}>
                 <button style={styles.btnAnnuler} onClick={() => { setShowDossier(false); setDossierForm(emptyForm); }}>
                   Annuler
                 </button>
                 <button style={styles.btnSauvegarder} onClick={handleSauvegardeDossier}>
-                  💾 {dossierMode === 'edit' ? 'Mettre à jour' : 'Sauvegarder le dossier'}
+                  💾 {dossierMode === 'edit' ? 'Mettre à jour' : 'Enregistrer le dossier'}
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
       {/* ── MODAL VUE DÉTAIL ── */}
       {viewingDossier && viewingDossier.patient && (
         <div style={styles.videoOverlay}>
@@ -460,7 +602,7 @@ const handleSauvegardeDossier = async () => {
               {/* Bandeau patient */}
               <div style={styles.viewPatientBanner}>
                 <div style={styles.viewAvatar}>{viewingDossier.patient.nom.charAt(0)}</div>
-                <div style={{flex: 1}}>
+                <div style={{ flex: 1 }}>
                   <p style={styles.viewPatientName}>{viewingDossier.patient.nom}</p>
                   <p style={styles.viewPatientMeta}>
                     {viewingDossier.patient.age} ans · Dernier RDV : {viewingDossier.patient.dernierRDV}
@@ -509,6 +651,37 @@ const handleSauvegardeDossier = async () => {
                   ))}
                 </div>
               </div>
+              {/* Prescriptions */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>📋 PRESCRIPTIONS</h4>
+                <div style={styles.viewTextBlock}>
+                  <p style={styles.viewTextContent}>{viewingDossier.prescriptions || 'Aucune prescription'}</p>
+                </div>
+              </div>
+
+              {/* Hospitalisations */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>🏥 HOSPITALISATIONS</h4>
+                <div style={styles.viewTextBlock}>
+                  <p style={styles.viewTextContent}>{viewingDossier.hospitalizations || 'Aucune hospitalisation'}</p>
+                </div>
+              </div>
+
+              {/* Allergies */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>🤧 ALLERGIES</h4>
+                <div style={styles.viewTextBlock}>
+                  <p style={styles.viewTextContent}>{viewingDossier.allergies || 'Aucune allergie'}</p>
+                </div>
+              </div>
+
+              {/* Antécédents */}
+              <div style={styles.dossierSection}>
+                <h4 style={styles.dossierSectionTitle}>🩺 ANTÉCÉDENTS</h4>
+                <div style={styles.viewTextBlock}>
+                  <p style={styles.viewTextContent}>{viewingDossier.antecedents || 'Aucun antécédent'}</p>
+                </div>
+              </div>
 
               <div style={styles.dossierActions}>
                 <button style={styles.btnAnnuler} onClick={() => setViewingDossier(null)}>
@@ -526,7 +699,7 @@ const handleSauvegardeDossier = async () => {
       {/* ── SIDEBAR ── */}
       <aside style={styles.sidebar}>
         <div style={styles.sidebarLogo}>
-          <img src="/logo.png" alt="logo" style={{height: '40px'}} />
+          <img src="/logo.png" alt="logo" style={{ height: '40px' }} />
           <span style={styles.sidebarLogoText}>HealthTech</span>
         </div>
 
@@ -538,10 +711,10 @@ const handleSauvegardeDossier = async () => {
 
         <div style={styles.sidebarNav}>
           {[
-            { key: 'dashboard',  label: 'Tableau de bord' },
-            { key: 'patients',   label: ' Mes patients' },
-            { key: 'alertes',    label: ' Alertes' },
-            { key: 'dossiers',   label: ' Dossiers Médicaux', badge: dossiers.length || null },
+            { key: 'dashboard', label: 'Tableau de bord' },
+            { key: 'patients', label: ' Mes patients' },
+            { key: 'alertes', label: ' Alertes' },
+            { key: 'dossiers', label: ' Dossiers Médicaux', badge: dossiers.length || null },
           ].map(({ key, label, badge }) => (
             <div
               key={key}
@@ -566,10 +739,10 @@ const handleSauvegardeDossier = async () => {
             <button style={styles.backBtn} onClick={() => navigate('/')}>← Retour</button>
             <div>
               <h1 style={styles.headerTitle}>
-                {activeTab === 'dashboard'  && 'Tableau de bord Médecin'}
-                {activeTab === 'patients'   && 'Mes patients'}
-                {activeTab === 'alertes'    && 'Alertes'}
-                {activeTab === 'dossiers'   && 'Dossiers médicaux'}
+                {activeTab === 'dashboard' && 'Tableau de bord Médecin'}
+                {activeTab === 'patients' && 'Mes patients'}
+                {activeTab === 'alertes' && 'Alertes'}
+                {activeTab === 'dossiers' && 'Dossiers médicaux'}
               </h1>
               <p style={styles.headerSubtitle}>Vue globale des patients et alertes en cours</p>
             </div>
@@ -577,7 +750,7 @@ const handleSauvegardeDossier = async () => {
           <div style={styles.headerRight}>
             <button style={styles.btnSimuler} onClick={handleSimuler}>🧪 Simuler</button>
             <div style={styles.alertBadge}>
-<span style={{color: '#1266f7'}}>🔔</span> <span style={styles.badgeCount}>{alertes.length}</span> alertes
+              <span style={{ color: '#1266f7' }}>🔔</span> <span style={styles.badgeCount}>{alertes.length}</span> alertes
             </div>
             <div style={styles.doctorBadge}>Dr. {user.prenom} {user.nom}</div>          </div>
         </header>
@@ -586,35 +759,35 @@ const handleSauvegardeDossier = async () => {
         {activeTab === 'dashboard' && (
           <>
             <section style={styles.cardsRow}>
-  <div style={styles.card}>
-    <div style={styles.cardIcon}>👥</div>
-    <div>
-      <p style={styles.cardLabel}>Patients suivis</p>
-      <p style={styles.cardValue}>{patients.length}</p>
-    </div>
-    <div style={{...styles.cardBar, backgroundColor: '#1266f7'}} />
-  </div>
-    <div style={{...styles.card, border: '1px solid #fde8e8'}}>
-    <div style={styles.cardIcon}>🚨</div>
-    <div>
-      <p style={styles.cardLabel}>Alertes critiques</p>
-<p style={{...styles.cardValue, color: '#e74c3c'}}>{alertes.filter(a => a.niveau === 'critique').length}</p>    </div>
-    <div style={{...styles.cardBar, backgroundColor: '#e74c3c'}} />
-  </div>
-  <div style={styles.card}>
-    <div style={styles.cardIcon}>✅</div>
-    <div>
-      <p style={styles.cardLabel}>Consultations aujourd'hui</p>
-      <p style={styles.cardValue}>0</p>
-    </div>
-    <div style={{...styles.cardBar, backgroundColor: '#27ae60'}} />
-  </div>
-</section>
+              <div style={styles.card}>
+                <div style={styles.cardIcon}>👥</div>
+                <div>
+                  <p style={styles.cardLabel}>Patients suivis</p>
+                  <p style={styles.cardValue}>{patients.length}</p>
+                </div>
+                <div style={{ ...styles.cardBar, backgroundColor: '#1266f7' }} />
+              </div>
+              <div style={{ ...styles.card, border: '1px solid #fde8e8' }}>
+                <div style={styles.cardIcon}>🚨</div>
+                <div>
+                  <p style={styles.cardLabel}>Alertes critiques</p>
+                  <p style={{ ...styles.cardValue, color: '#e74c3c' }}>{alertes.filter(a => a.niveau === 'critique').length}</p>    </div>
+                <div style={{ ...styles.cardBar, backgroundColor: '#e74c3c' }} />
+              </div>
+              <div style={styles.card}>
+                <div style={styles.cardIcon}>✅</div>
+                <div>
+                  <p style={styles.cardLabel}>Consultations aujourd'hui</p>
+                  <p style={styles.cardValue}>0</p>
+                </div>
+                <div style={{ ...styles.cardBar, backgroundColor: '#27ae60' }} />
+              </div>
+            </section>
             <div style={styles.bottomRow}>
               <section style={styles.tableSection}>
                 <div style={styles.tableSectionHeader}>
                   <h2 style={styles.sectionTitle}>Patients à examiner</h2>
-                  <button style={styles.btnPrimary}>+ Nouveau patient</button>
+
                 </div>
                 <table style={styles.table}>
                   <thead>
@@ -649,18 +822,18 @@ const handleSauvegardeDossier = async () => {
                           </span>
                         </td>
                         <td style={styles.td}>
-  <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-    <button style={styles.btnDossier} onClick={() => handleOpenCreate(p)}>
-      Saisir le Dossier Médical
-    </button>
-    <button style={styles.btnConsult} onClick={() => { setSelectedPatient(p); setShowVideo(true); }}>
-      Consultation vidéo
-    </button>
-    <button style={styles.btnPrescrire} onClick={() => { setSelectedPatient(p); setShowOrdonnance(true); fetchPharmacies(); }}>
-       Prescrire
-    </button>
-  </div>
-</td>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button style={styles.btnDossier} onClick={() => handleOpenCreate(p)}>
+                              Saisir le Dossier Médical
+                            </button>
+                            <button style={styles.btnConsult} onClick={() => { setSelectedPatient(p); setShowVideo(true); }}>
+                              Consultation vidéo
+                            </button>
+                            <button style={styles.btnPrescrire} onClick={() => { setSelectedPatient(p); setShowOrdonnance(true); fetchPharmacies(); }}>
+                              Prescrire
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -668,22 +841,22 @@ const handleSauvegardeDossier = async () => {
               </section>
 
               <section style={styles.alertPanel}>
-  <h2 style={styles.sectionTitle}>Alertes récentes</h2>
-  {alertes.length === 0 ? (
-    <p style={{color: '#7f8c8d', fontSize: '13px'}}>Aucune alerte pour le moment.</p>
-  ) : (
-    alertes.slice(0, 5).map((a, i) => (
-      <div key={i} style={styles.alertItem}>
-        <div style={styles.alertDot} />
-        <div>
-          <p style={styles.alertName}>{a.patient?.user?.prenom} {a.patient?.user?.nom}</p>
-          <p style={styles.alertMsg}>{a.message}</p>
-          <p style={styles.alertTime}>{new Date(a.created_at).toLocaleString('fr-FR')}</p>
-        </div>
-      </div>
-    ))
-  )}
-</section>
+                <h2 style={styles.sectionTitle}>Alertes récentes</h2>
+                {alertes.length === 0 ? (
+                  <p style={{ color: '#7f8c8d', fontSize: '13px' }}>Aucune alerte pour le moment.</p>
+                ) : (
+                  alertes.slice(0, 5).map((a, i) => (
+                    <div key={i} style={styles.alertItem}>
+                      <div style={styles.alertDot} />
+                      <div>
+                        <p style={styles.alertName}>{a.patient?.user?.prenom} {a.patient?.user?.nom}</p>
+                        <p style={styles.alertMsg}>{a.message}</p>
+                        <p style={styles.alertTime}>{new Date(a.created_at).toLocaleString('fr-FR')}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </section>
             </div>
           </>
         )}
@@ -722,7 +895,7 @@ const handleSauvegardeDossier = async () => {
                         ...styles.dossierCardAccent,
                         backgroundColor:
                           d.patient.alerte ? '#e74c3c' :
-                          d.patient.statut === 'Surveillance' ? '#f39c12' : '#27ae60',
+                            d.patient.statut === 'Surveillance' ? '#f39c12' : '#27ae60',
                       }} />
 
                       <div style={styles.dossierCardContent}>
@@ -738,17 +911,17 @@ const handleSauvegardeDossier = async () => {
 
                         {/* Constantes résumées */}
                         {/* Résumé dossier */}
-<div style={styles.dossierCardCenter}>
-  <div style={styles.dossierConstantes}>
-    <div style={styles.dossierConstanteItem}>
-      <span style={styles.dossierConstanteLabel}>🩺 Diagnostic</span>
-      <span style={{...styles.dossierConstanteVal, fontSize: '12px'}}>{d.diagnostic || '—'}</span>
-    </div>
-    <div style={styles.dossierConstanteItem}>
-      <span style={styles.dossierConstanteLabel}>💊 Traitement</span>
-      <span style={{...styles.dossierConstanteVal, fontSize: '12px'}}>{d.traitement || '—'}</span>
-    </div>
-  </div>
+                        <div style={styles.dossierCardCenter}>
+                          <div style={styles.dossierConstantes}>
+                            <div style={styles.dossierConstanteItem}>
+                              <span style={styles.dossierConstanteLabel}>🩺 Diagnostic</span>
+                              <span style={{ ...styles.dossierConstanteVal, fontSize: '12px' }}>{d.diagnostic || '—'}</span>
+                            </div>
+                            <div style={styles.dossierConstanteItem}>
+                              <span style={styles.dossierConstanteLabel}>💊 Traitement</span>
+                              <span style={{ ...styles.dossierConstanteVal, fontSize: '12px' }}>{d.traitement || '—'}</span>
+                            </div>
+                          </div>
                           {d.diagnostic && (
                             <p style={styles.dossierDiagPreview}>
                               🩺 <em>{d.diagnostic.length > 70 ? d.diagnostic.slice(0, 70) + '…' : d.diagnostic}</em>
@@ -782,81 +955,81 @@ const handleSauvegardeDossier = async () => {
 
         {/* ════════ AUTRES ONGLETS ════════ */}
         {activeTab === 'patients' && (
-  <div style={styles.content}>
-    <div style={styles.tableCard}>
-      <div style={styles.tableHeader}>
-        <h2 style={styles.sectionTitle}>Mes patients ({patients.length})</h2>
-      </div>
-      <table style={styles.table}>
-        <thead>
-          <tr style={styles.tableHead}>
-            <th style={styles.th}>Patient</th>
-            <th style={styles.th}>Âge</th>
-            <th style={styles.th}>Dernier RDV</th>
-            <th style={styles.th}>Tension</th>
-            <th style={styles.th}>Statut</th>
-            <th style={styles.th}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {patients.map((p, i) => (
-            <tr key={i} style={p.alerte ? styles.trAlert : styles.tr}>
-              <td style={styles.td}>
-                <span style={styles.patientAvatar}>{p.nom.charAt(0)}</span>
-                {p.nom}
-              </td>
-              <td style={styles.td}>{p.age} ans</td>
-              <td style={styles.td}>{p.dernierRDV}</td>
-              <td style={styles.td}>{p.tension}</td>
-              <td style={styles.td}>
-                <span style={p.alerte ? styles.badgeAlert : p.statut === 'Surveillance' ? styles.badgeWarning : styles.badgeOk}>
-                  {p.statut}
-                </span>
-              </td>
-              <td style={styles.td}>
-                <button style={styles.btnDossier} onClick={() => handleOpenCreate(p)}>📋 Dossier</button>
-                <button style={styles.btnConsult} onClick={() => { setSelectedPatient(p); setShowVideo(true); }}>📹 Consulter</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
-{activeTab === 'alertes' && (
-  <div style={styles.content}>
-    <div style={styles.tableSection}>
-      <h2 style={styles.sectionTitle}>Toutes les alertes ({alertes.length})</h2>
-      {alertes.length === 0 ? (
-        <p style={{color: '#7f8c8d', fontSize: '14px'}}>Aucune alerte pour le moment.</p>
-      ) : (
-        alertes.map((a, i) => (
-          <div key={i} style={styles.alertItemFull}>
-            <div style={{...styles.alertDot, backgroundColor: '#e74c3c'}} />
-            <div>
-              <p style={styles.alertName}>{a.patient?.user?.prenom} {a.patient?.user?.nom}</p>
-              <p style={styles.alertMsg}>{a.message}</p>
-              <p style={styles.alertTime}>{new Date(a.created_at).toLocaleString('fr-FR')}</p>
+          <div style={styles.content}>
+            <div style={styles.tableCard}>
+              <div style={styles.tableHeader}>
+                <h2 style={styles.sectionTitle}>Mes patients ({patients.length})</h2>
+              </div>
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.tableHead}>
+                    <th style={styles.th}>Patient</th>
+                    <th style={styles.th}>Âge</th>
+                    <th style={styles.th}>Dernier RDV</th>
+                    <th style={styles.th}>Tension</th>
+                    <th style={styles.th}>Statut</th>
+                    <th style={styles.th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {patients.map((p, i) => (
+                    <tr key={i} style={p.alerte ? styles.trAlert : styles.tr}>
+                      <td style={styles.td}>
+                        <span style={styles.patientAvatar}>{p.nom.charAt(0)}</span>
+                        {p.nom}
+                      </td>
+                      <td style={styles.td}>{p.age} ans</td>
+                      <td style={styles.td}>{p.dernierRDV}</td>
+                      <td style={styles.td}>{p.tension}</td>
+                      <td style={styles.td}>
+                        <span style={p.alerte ? styles.badgeAlert : p.statut === 'Surveillance' ? styles.badgeWarning : styles.badgeOk}>
+                          {p.statut}
+                        </span>
+                      </td>
+                      <td style={styles.td}>
+                        <button style={styles.btnDossier} onClick={() => handleOpenCreate(p)}>📋 Dossier</button>
+                        <button style={styles.btnConsult} onClick={() => { setSelectedPatient(p); setShowVideo(true); }}>📹 Consulter</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        ))
-      )}
-    </div>
-  </div>
-)}
-{activeTab !== 'dashboard' && activeTab !== 'dossiers' && activeTab !== 'patients' && activeTab !== 'alertes' && (
-  <div style={styles.content}>
-    <div style={styles.emptyState}>
-      <p style={styles.emptyIcon}>🚧</p>
-      <h2 style={styles.emptyTitle}>Section en cours de développement</h2>
-      <p style={styles.emptyText}>Cette fonctionnalité sera disponible prochainement.</p>
-      <button style={styles.btnPrimary} onClick={() => setActiveTab('dashboard')}>
-        ← Retour au tableau de bord
-      </button>
-    </div>
-  </div>
-)}
+        )}
+        {activeTab === 'alertes' && (
+          <div style={styles.content}>
+            <div style={styles.tableSection}>
+              <h2 style={styles.sectionTitle}>Toutes les alertes ({alertes.length})</h2>
+              {alertes.length === 0 ? (
+                <p style={{ color: '#7f8c8d', fontSize: '14px' }}>Aucune alerte pour le moment.</p>
+              ) : (
+                alertes.map((a, i) => (
+                  <div key={i} style={styles.alertItemFull}>
+                    <div style={{ ...styles.alertDot, backgroundColor: '#e74c3c' }} />
+                    <div>
+                      <p style={styles.alertName}>{a.patient?.user?.prenom} {a.patient?.user?.nom}</p>
+                      <p style={styles.alertMsg}>{a.message}</p>
+                      <p style={styles.alertTime}>{new Date(a.created_at).toLocaleString('fr-FR')}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+        {activeTab !== 'dashboard' && activeTab !== 'dossiers' && activeTab !== 'patients' && activeTab !== 'alertes' && (
+          <div style={styles.content}>
+            <div style={styles.emptyState}>
+              <p style={styles.emptyIcon}>🚧</p>
+              <h2 style={styles.emptyTitle}>Section en cours de développement</h2>
+              <p style={styles.emptyText}>Cette fonctionnalité sera disponible prochainement.</p>
+              <button style={styles.btnPrimary} onClick={() => setActiveTab('dashboard')}>
+                ← Retour au tableau de bord
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
@@ -889,11 +1062,33 @@ const styles = {
     borderRadius: '16px', overflow: 'hidden',
     display: 'flex', flexDirection: 'column', maxHeight: '90vh',
   },
-  videoHeader: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '16px 24px', backgroundColor: '#0a1f5c',
+
+  dossierContainerLarge: {
+    width: '100%',
+    maxWidth: '1000px',
+    maxHeight: '90vh',
+    backgroundColor: '#ffffff',
+    borderRadius: '24px',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 20px 35px -8px rgba(0, 0, 0, 0.15)',
   },
-  videoTitle: { color: 'white', margin: 0, fontSize: '16px', fontWeight: '600' },
+
+  videoHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 28px',
+    background: 'linear-gradient(135deg, #0a1f5c 0%, #1a3a8a 100%)',
+  },
+  videoTitle: {
+    color: 'white',
+    margin: 0,
+    fontSize: '20px',
+    fontWeight: '600',
+    letterSpacing: '0.5px',
+  },
   videoClose: {
     backgroundColor: '#e74c3c', color: 'white', border: 'none',
     padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
@@ -902,18 +1097,32 @@ const styles = {
   videoFrame: { flex: 1, border: 'none', width: '100%' },
 
   /* Corps modal */
-  dossierBody: { padding: '24px', overflowY: 'auto' },
+  dossierBody: { padding: '24px', overflowY: 'auto', backgroundColor: '#ffffff' },
   successMsg: {
     backgroundColor: '#e8f8f0', color: '#27ae60', padding: '12px',
     borderRadius: '8px', marginBottom: '16px', fontSize: '14px',
     fontWeight: '600', textAlign: 'center',
   },
   dossierGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' },
-  dossierSection: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  dossierSectionTitle: {
-    color: '#0a1f5c', fontSize: '15px', fontWeight: '700',
-    margin: '0 0 8px', paddingBottom: '8px', borderBottom: '2px solid #1266f7',
+
+  dossierSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: '16px',
+    padding: '20px',
+    marginBottom: '20px',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
   },
+  dossierSectionTitle: {
+    color: '#0a1f5c',
+    fontSize: '16px',
+    fontWeight: '700',
+    margin: '0 0 16px',
+    paddingBottom: '10px',
+    borderBottom: '2px solid #1266f7',
+    display: 'inline-block',
+  },
+
   dossierRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
   dossierField: { display: 'flex', flexDirection: 'column', gap: '4px' },
   dossierLabel: { color: '#0a1f5c', fontSize: '12px', fontWeight: '600' },
@@ -922,19 +1131,36 @@ const styles = {
     fontSize: '14px', color: '#2c3e50', backgroundColor: '#f8faff',
     outline: 'none', width: '100%', boxSizing: 'border-box',
   },
+
   dossierActions: {
-    display: 'flex', justifyContent: 'flex-end', gap: '12px',
-    marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e8ecf0',
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '16px',
+    marginTop: '24px',
+    paddingTop: '20px',
+    borderTop: '1px solid #e2e8f0',
   },
   btnAnnuler: {
-    padding: '10px 24px', borderRadius: '8px', border: '2px solid #e8ecf0',
-    backgroundColor: 'white', color: '#7f8c8d', fontSize: '14px',
-    fontWeight: '600', cursor: 'pointer',
+    padding: '12px 28px',
+    borderRadius: '12px',
+    border: '1px solid #cbd5e1',
+    backgroundColor: '#ffffff',
+    color: '#5a6d86',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   btnSauvegarder: {
-    padding: '10px 24px', borderRadius: '8px', border: 'none',
-    backgroundColor: '#1266f7', color: 'white', fontSize: '14px',
-    fontWeight: '600', cursor: 'pointer',
+    padding: '12px 28px',
+    borderRadius: '12px',
+    border: 'none',
+    backgroundColor: '#1266f7',
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   btnModifier: {
     padding: '10px 20px', borderRadius: '8px', border: 'none',
@@ -945,6 +1171,131 @@ const styles = {
     padding: '10px 20px', borderRadius: '8px', border: 'none',
     backgroundColor: '#1266f7', color: 'white', fontSize: '13px',
     fontWeight: '600', cursor: 'pointer',
+  },
+
+  /* Carte identité améliorée */
+  patientIdentityCard: {
+    backgroundColor: '#f0f7ff',
+    borderRadius: '16px',
+    padding: '20px 24px',
+    marginBottom: '24px',
+    border: '1px solid #1266f7',
+    boxShadow: '0 2px 8px rgba(18, 102, 247, 0.08)',
+  },
+  patientIdentityHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '16px',
+    paddingBottom: '12px',
+    borderBottom: '2px solid #1266f7',
+  },
+  patientIdentityIcon: { fontSize: '22px' },
+  patientIdentityTitle: {
+    fontWeight: 'bold',
+    color: '#0a1f5c',
+    fontSize: '16px',
+    letterSpacing: '0.5px',
+  },
+  patientIdentityGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '16px',
+    fontSize: '14px',
+    color: '#1e293b',
+  },
+
+  /* Grille des constantes vitales */
+  constantesGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '16px',
+  },
+  constanteCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: '14px',
+    padding: '16px 12px',
+    textAlign: 'center',
+    border: '1px solid #e2e8f0',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+  },
+  constanteIcon: { fontSize: '28px', marginBottom: '10px' },
+  constanteLabel: {
+    fontSize: '12px',
+    color: '#5a6d86',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginBottom: '8px',
+  },
+  constanteInput: {
+    width: '100%',
+    padding: '10px 8px',
+    textAlign: 'center',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    color: '#0a1f5c',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '10px',
+    marginBottom: '4px',
+    outline: 'none',
+  },
+  constanteUnit: { fontSize: '10px', color: '#94a3b8', marginTop: '4px' },
+
+  /* Textarea et inputs */
+  dossierTextarea: {
+    width: '100%',
+    padding: '14px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '12px',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+    resize: 'vertical',
+    minHeight: '80px',
+    outline: 'none',
+  },
+  dossierInputDate: {
+    width: 'auto',
+    padding: '12px 16px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '12px',
+    fontSize: '14px',
+    color: '#1e293b',
+    backgroundColor: '#f8fafc',
+    outline: 'none',
+  },
+  dossierInputSmall: {
+    padding: '8px 12px',
+    borderRadius: '10px',
+    border: '1px solid #cbd5e1',
+    fontSize: '14px',
+    color: '#1e293b',
+    backgroundColor: '#ffffff',
+    marginLeft: '8px',
+    cursor: 'pointer',
+  },
+  alertItemFull: {
+    display: 'flex',
+    gap: '12px',
+    padding: '14px 0',
+    borderBottom: '1px solid #f0f2f5',
+  },
+  tableCard: {
+    backgroundColor: 'white',
+    borderRadius: '14px',
+    padding: '24px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    width: '100%',
+  },
+  tableHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px',
   },
 
   /* Vue détail */
@@ -976,7 +1327,7 @@ const styles = {
   viewTextLabel: { color: '#7f8c8d', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', margin: '0 0 6px' },
   viewTextContent: { color: '#2c3e50', fontSize: '14px', margin: 0, lineHeight: '1.5' },
 
-  /* Sidebar */
+  /* Sidebar - garder comme avant */
   sidebar: {
     width: '240px', backgroundColor: '#0a1f5c',
     display: 'flex', flexDirection: 'column', padding: '24px 0', flexShrink: 0,
@@ -1038,7 +1389,6 @@ const styles = {
     borderRadius: '20px', fontSize: '13px', fontWeight: '600',
     display: 'flex', alignItems: 'center', gap: '6px',
   },
-
   btnSimuler: { backgroundColor: '#27ae60', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' },
   badgeCount: {
     backgroundColor: '#e74c3c', color: 'white', borderRadius: '50%',
@@ -1050,8 +1400,8 @@ const styles = {
     borderRadius: '20px', fontSize: '13px', fontWeight: '600',
   },
 
-  /* Dashboard */
-cardsRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', padding: '20px 30px' },  card: {
+  cardsRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', padding: '20px 30px' },
+  card: {
     backgroundColor: 'white', borderRadius: '14px', padding: '20px',
     display: 'flex', alignItems: 'center', gap: '16px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)', position: 'relative', overflow: 'hidden',
@@ -1064,13 +1414,6 @@ cardsRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px',
   tableSection: {
     flex: 1, backgroundColor: 'white', borderRadius: '14px', padding: '20px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'auto',
-    tableCard: {
-  backgroundColor: 'white',
-  borderRadius: '14px',
-  padding: '24px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-  width: '100%',
-},
   },
   tableSectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
   sectionTitle: { color: '#0a1f5c', margin: 0, fontSize: '16px', fontWeight: '700' },
@@ -1093,42 +1436,24 @@ cardsRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px',
     width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#1266f7',
     color: 'white', fontSize: '14px', fontWeight: 'bold', marginRight: '10px',
   },
-  badgeOk:      { backgroundColor: '#e8f8f0', color: '#27ae60', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' },
+  badgeOk: { backgroundColor: '#e8f8f0', color: '#27ae60', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' },
   badgeWarning: { backgroundColor: '#fff8e8', color: '#f39c12', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' },
-  badgeAlert:   { backgroundColor: '#fde8e8', color: '#e74c3c', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' },
+  badgeAlert: { backgroundColor: '#fde8e8', color: '#e74c3c', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600' },
   btnDossier: {
-    backgroundColor: '#f0f2f5',
-    color: '#0a1f5c',
-    border: '1px solid #d5d8dc',
-    padding: '8px 14px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600',
-    whiteSpace: 'nowrap',
-},
-btnConsult: {
-    backgroundColor: '#e8f8f0',
-    color: '#27ae60',
-    border: '1px solid #27ae60',
-    padding: '8px 14px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600',
-    whiteSpace: 'nowrap',
-},
-btnPrescrire: {
-    backgroundColor: '#fef5e7',
-    color: '#f39c12',
-    border: '1px solid #f39c12',
-    padding: '8px 14px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600',
-    whiteSpace: 'nowrap',
-},
+    backgroundColor: '#f0f2f5', color: '#0a1f5c', border: '1px solid #d5d8dc',
+    padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
+    fontWeight: '600', whiteSpace: 'nowrap',
+  },
+  btnConsult: {
+    backgroundColor: '#e8f8f0', color: '#27ae60', border: '1px solid #27ae60',
+    padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
+    fontWeight: '600', whiteSpace: 'nowrap',
+  },
+  btnPrescrire: {
+    backgroundColor: '#fef5e7', color: '#f39c12', border: '1px solid #f39c12',
+    padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
+    fontWeight: '600', whiteSpace: 'nowrap',
+  },
   alertPanel: {
     width: '280px', backgroundColor: 'white', borderRadius: '14px', padding: '20px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'auto', flexShrink: 0,
@@ -1136,7 +1461,7 @@ btnPrescrire: {
   alertItem: { display: 'flex', gap: '12px', padding: '14px 0', borderBottom: '1px solid #f0f2f5' },
   alertDot: { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#e74c3c', flexShrink: 0, marginTop: '4px' },
   alertName: { color: '#0a1f5c', fontWeight: '600', fontSize: '13px', margin: '0 0 4px' },
-  alertMsg:  { color: '#7f8c8d', fontSize: '12px', margin: '0 0 4px' },
+  alertMsg: { color: '#7f8c8d', fontSize: '12px', margin: '0 0 4px' },
   alertTime: { color: '#bdc3c7', fontSize: '11px', margin: 0 },
 
   /* Onglet Dossiers */
@@ -1176,7 +1501,7 @@ btnPrescrire: {
 
   /* Empty state */
   emptyState: { textAlign: 'center' },
-  emptyIcon:  { fontSize: '48px', margin: '0 0 16px' },
+  emptyIcon: { fontSize: '48px', margin: '0 0 16px' },
   emptyTitle: { color: '#0a1f5c', fontSize: '20px', fontWeight: 'bold', margin: '0 0 8px' },
-  emptyText:  { color: '#7f8c8d', fontSize: '14px', margin: '0 0 20px' },
+  emptyText: { color: '#7f8c8d', fontSize: '14px', margin: '0 0 20px' },
 };
