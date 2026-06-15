@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats();
     fetchUsers();
+    fetchMedecins(); // Charger les médecins au démarrage pour s'assurer que la liste est prête
   }, []);
 
   const fetchStats = async () => {
@@ -58,16 +59,33 @@ export default function AdminDashboard() {
   };
 
   const handleAssignerPatient = async () => {
-    if (!assignPatientId || !selectedMedecin) return;
+    setMessage('');
+    setErreur('');
+
+    if (!assignPatientId) {
+      alert("Erreur : Aucun patient sélectionné.");
+      return;
+    }
+
+    if (!selectedMedecin) {
+      alert("Veuillez sélectionner un médecin dans la liste avant de valider.");
+      return;
+    }
+
     try {
+      // On passe l'identifiant du médecin sélectionné
       await api.put(`/admin/patients/assigner/${assignPatientId}`, {
           medecin_id: selectedMedecin,
       });
+      
       setMessage('Patient assigné avec succès !');
       setAssignPatientId(null);
       setSelectedMedecin('');
-      fetchUsers();
-    } catch (err) { setErreur("Erreur lors de l'assignation."); }
+      fetchUsers(); // Actualise le tableau pour afficher le badge vert "✅ Assigné"
+    } catch (err) { 
+      console.error("Détails de l'erreur renvoyée par Laravel :", err.response?.data);
+      setErreur(err.response?.data?.message || "Erreur lors de l'assignation."); 
+    }
   };
 
   const handleCreateMedecin = async (e) => {
@@ -77,7 +95,7 @@ export default function AdminDashboard() {
       await api.post('/admin/medecins', formMedecin);
       setMessage('Compte médecin créé avec succès!');
       setFormMedecin({ nom: '', prenom: '', email: '', telephone: '', password: '', specialite: '' });
-      fetchStats(); fetchUsers();
+      fetchStats(); fetchUsers(); fetchMedecins();
     } catch (err) {
       if (err.response?.status === 422) setErreur(Object.values(err.response.data.errors)[0][0]);
       else if (err.response?.status === 403) setErreur('Accès refusé. Vous devez être admin.');
@@ -198,22 +216,34 @@ export default function AdminDashboard() {
                 <button style={styles.btnPrimary} onClick={fetchUsers}>🔄 Actualiser</button>
               </div>
               <table style={styles.table}>
-                <thead><tr style={styles.tableHead}><th style={styles.th}>ID</th><th style={styles.th}>Nom</th><th style={styles.th}>Email</th><th style={styles.th}>Téléphone</th><th style={styles.th}>Rôle</th><th style={styles.th}>Action</th></tr></thead>
+                <thead>
+                  <tr style={styles.tableHead}>
+                    <th style={styles.th}>ID</th>
+                    <th style={styles.th}>Nom</th>
+                    <th style={styles.th}>Email</th>
+                    <th style={styles.th}>Téléphone</th>
+                    <th style={styles.th}>Rôle</th>
+                    <th style={styles.th}>Action</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {users.map((u) => (
                     <tr key={u.id} style={styles.tr}>
                       <td style={styles.td}>#{u.id}</td>
-                      <td style={styles.td}><div style={styles.userAvatar}>{u.nom?.charAt(0)}</div>{u.prenom} {u.nom}</td>
+                      <td style={styles.td}>
+                        <div style={styles.userAvatar}>{u.nom?.charAt(0)}</div>
+                        {u.prenom} {u.nom}
+                      </td>
                       <td style={styles.td}>{u.email}</td>
                       <td style={styles.td}>{u.telephone}</td>
                       <td style={styles.td}>{roleBadge(u.role)}</td>
                       <td style={styles.td}>
                         {u.role === 'patient' && (
                           <>
-                           {!u.medecin_id && (
-  <button style={styles.btnAssign} onClick={() => { setAssignPatientId(u.id); fetchMedecins(); }}>📋 Assigner</button>
-)}
-{u.medecin_id && <span style={{fontSize:'12px',color:'#27ae60'}}>✅ Assigné</span>}
+                            {!u.medecin_id && (
+                              <button style={styles.btnAssign} onClick={() => { setAssignPatientId(u.id); setMessage(''); setErreur(''); }}>📋 Assigner</button>
+                            )}
+                            {u.medecin_id && <span style={{fontSize:'12px',color:'#27ae60', marginRight: '8px'}}>✅ Assigné</span>}
                             <button style={styles.btnDelete} onClick={() => handleDeleteUser(u.id)}>🗑️</button>
                           </>
                         )}
@@ -226,18 +256,26 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+
             {assignPatientId && (
               <div style={styles.assignBox}>
                 <h3 style={styles.sectionTitle}>Assigner le patient #{assignPatientId} à un médecin</h3>
+                
+                {erreur && <div style={{...styles.erreurBox, marginBottom: '15px'}}>{erreur}</div>}
+                {message && <div style={{...styles.successBox, marginBottom: '15px'}}>{message}</div>}
+                
                 <select style={styles.input} value={selectedMedecin} onChange={(e) => setSelectedMedecin(e.target.value)}>
                   <option value="">-- Choisir un médecin --</option>
                   {medecins.map((m) => (
-                    <option key={m.id} value={m.id}>Dr. {m.user?.prenom} {m.user?.nom} ({m.specialite})</option>
+                    <option key={m.id} value={m.id}>
+                      Dr. {m.user?.prenom} {m.user?.nom} ({m.specialite || 'Généraliste'})
+                    </option>
                   ))}
                 </select>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                
+                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                   <button style={styles.btnPrimary} onClick={handleAssignerPatient}>✅ Valider</button>
-                  <button style={styles.btnSecondary} onClick={() => setAssignPatientId(null)}>❌ Annuler</button>
+                  <button style={styles.btnSecondary} onClick={() => { setAssignPatientId(null); setErreur(''); setMessage(''); }}>❌ Annuler</button>
                 </div>
               </div>
             )}

@@ -8,14 +8,37 @@ export default function PatientDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mesures, setMesures] = useState([]);
   const [alertes, setAlertes] = useState([]);
+  const [consultationEnCours, setConsultationEnCours] = useState(null);
+  const [demandeEnvoyee, setDemandeEnvoyee] = useState(false);
+  const [consultationAcceptee, setConsultationAcceptee] = useState(false);
+  const [demandeEnAttente, setDemandeEnAttente] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    fetchMesures();
-    fetchAlertes();
-  }, []);
+  fetchMesures();
+  fetchAlertes();
+  verifierConsultationActive();
+}, []);
 
+useEffect(() => {
+  let interval;
+  if (demandeEnvoyee && !consultationAcceptee) {
+    interval = setInterval(verifierStatutConsultation, 5000);
+  }
+  return () => clearInterval(interval);
+}, [demandeEnvoyee, consultationAcceptee]);
+
+// ⬇️ NOUVEAU - À AJOUTER ⬇️
+useEffect(() => {
+  let interval;
+  if (!demandeEnvoyee && !consultationAcceptee && !demandeEnAttente) {
+    interval = setInterval(() => {
+      verifierConsultationActive();
+    }, 5000);
+  }
+  return () => clearInterval(interval);
+}, [demandeEnvoyee, consultationAcceptee, demandeEnAttente]);
   const fetchMesures = async () => {
     try {
       const res = await api.get('/patient/mes-mesures');
@@ -30,6 +53,184 @@ export default function PatientDashboard() {
     } catch (err) { console.error('Erreur alertes:', err); }
   };
 
+ const verifierConsultationActive = async () => {
+  try {
+    if (!user.patient?.id) {
+      console.log('Patient non identifié');
+      return;
+    }
+    const res = await api.get(`/consultations/patient/${user.patient.id}/actives`);
+    
+    // 1. Chercher une consultation acceptée
+    let consultationTrouvee = res.data.find(c => c.status === 'acceptee');
+    
+    // 2. Si pas de consultation acceptée, chercher un appel du médecin en attente
+    if (!consultationTrouvee) {
+      consultationTrouvee = res.data.find(c => c.status === 'en_attente' && c.initiated_by === 'medecin');
+    }
+    
+    if (consultationTrouvee) {
+      const consultationData = {
+        roomName: consultationTrouvee.room_name,
+        consultationId: consultationTrouvee.id,
+        initiatedBy: consultationTrouvee.initiated_by
+      };
+      
+      setConsultationAcceptee(true);
+      setConsultationEnCours(consultationData);
+      localStorage.setItem('consultationEnCours', JSON.stringify(consultationData));
+      
+      // Notification uniquement si le médecin appelle
+      if (consultationTrouvee.status === 'en_attente' && consultationTrouvee.initiated_by === 'medecin') {
+        if (!localStorage.getItem('alert_shown')) {
+          localStorage.setItem('alert_shown', 'true');
+          alert('📞 Le médecin vous appelle ! Cliquez sur "Rejoindre la consultation".');
+        }
+      }
+    } else {
+      localStorage.removeItem('consultationEnCours');
+      localStorage.removeItem('alert_shown');
+      setConsultationAcceptee(false);
+      setConsultationEnCours(null);
+    }
+  } catch (err) { console.error('Erreur vérification consultation:', err); }
+};
+  const verifierStatutConsultation = async () => {
+    try {
+      if (!user.patient?.id) {
+        console.log('Patient non identifié');
+        return;
+      }
+      const res = await api.get(`/consultations/patient/${user.patient.id}/actives`);
+      
+      // 1. On cherche d'abord s'il y a une consultation acceptée
+      const acceptee = res.data.find(c => c.status === 'acceptee');
+      if (acceptee) {
+        // CORRECTION IMMÉDIATE : On change les états d'abord pour tuer l'intervalle
+        setConsultationAcceptee(true);
+        setDemandeEnvoyee(false);
+        setConsultationEnCours({
+          roomName: acceptee.room_name,
+          consultationId: acceptee.id
+        });
+
+        // On retarde légèrement l'affichage pour laisser React couper le useEffect
+        setTimeout(() => {
+          alert('🎉 Le médecin a accepté votre consultation ! Cliquez sur "Rejoindre la consultation".');
+        }, 50);
+        return;
+      }
+      
+      // 2. On vérifie s'il reste une demande en cours de traitement
+      const aUneDemandeEnAttente = res.data.some(c => c.status === 'en_attente' || c.status === 'pending');
+      
+      // 3. On ne valide le refus que si plus aucune demande n'est en attente
+      if (!aUneDemandeEnAttente && demandeEnvoyee) {
+        const refusee = res.data.find(c => c.status === 'rejetee' || c.status === 'refusee');
+        if (refusee) {
+          setDemandeEnvoyee(false);
+          setDemandeEnAttente(false);
+          
+          setTimeout(() => {
+            alert('❌ Le médecin a refusé votre consultation. Veuillez réessayer plus tard.');
+          }, 50);
+        }
+      }
+    } catch (err) { console.error('Erreur vérification statut:', err); }
+  };
+
+  const demanderConsultation = async () => {
+    if (!user.patient?.id) {
+      alert('❌ Patient non identifié. Veuillez vous reconnecter.');
+      return;
+    }
+
+    if (!user.patient?.medecin_id) {
+      alert('❌ Aucun médecin assigné. Veuillez contacter l\'administrateur.');
+      return;
+    }
+
+    try {
+      const res = await api.post('/consultations/demander', {
+  medecin_id: user.patient.medecin_id,
+  patient_id: user.patient.id,
+  initiated_by: 'patient'  // ← Ajoute cette ligne
+});
+      
+      if (res.data.success) {
+        setDemandeEnvoyee(true);
+        setDemandeEnAttente(true);
+        alert('✅ Demande de consultation envoyée au médecin. Veuillez patienter...');
+      }
+    } catch (err) {
+      console.error('Erreur demande consultation:', err);
+      alert('❌ Erreur lors de la demande. Veuillez réessayer.');
+    }
+  };
+
+  const handleRejoindreConsultation = () => {
+    if (consultationEnCours?.roomName) {
+      setShowVideo(true);
+    }
+  };
+
+  const terminerConsultation = async () => {
+    let currentConsultation = consultationEnCours;
+    if (!currentConsultation?.consultationId) {
+      const saved = localStorage.getItem('consultationEnCours');
+      if (saved) {
+        currentConsultation = JSON.parse(saved);
+        console.log('Récupéré depuis localStorage:', currentConsultation);
+      }
+    }
+    
+    if (!currentConsultation?.consultationId) {
+      alert('❌ Aucune consultation active');
+      return;
+    }
+    
+    if (!window.confirm('Voulez-vous vraiment terminer cette consultation ?')) return;
+    
+    try {
+      await api.put(`/consultations/${currentConsultation.consultationId}/terminer`);
+      
+      localStorage.removeItem('consultationEnCours');
+      setConsultationAcceptee(false);
+      setConsultationEnCours(null);
+      setDemandeEnAttente(false);
+      setDemandeEnvoyee(false);
+      setShowVideo(false);
+      
+      window.location.reload();
+    } catch (err) {
+      console.error('Erreur terminaison:', err);
+      alert('❌ Erreur lors de la terminaison');
+    }
+  };
+const refuserConsultation = async () => {
+  if (!consultationEnCours?.consultationId) {
+    alert('❌ Aucune consultation active');
+    return;
+  }
+  
+  if (window.confirm('Confirmez-vous que vous n\'êtes pas disponible ?')) {
+    try {
+      await api.post(`/consultations/${consultationEnCours.consultationId}/rejeter`);
+      
+      localStorage.removeItem('consultationEnCours');
+      setConsultationAcceptee(false);
+      setConsultationEnCours(null);
+      setDemandeEnAttente(false);
+      setDemandeEnvoyee(false);
+      setShowVideo(false);
+      
+      alert('✅ Consultation refusée. Le médecin en sera informé.');
+    } catch (err) {
+      console.error('Erreur refus consultation:', err);
+      alert('❌ Erreur lors du refus');
+    }
+  }
+};
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -39,13 +240,10 @@ export default function PatientDashboard() {
   const derniereMesure = mesures[0] || {};
   const nbAlertes = alertes.filter(a => !a.vue).length;
 
-  const roomName = `HealthTech-${(user.nom || 'Patient').replace(/\s+/g, '-')}-${(user.prenom || '').replace(/\s+/g, '-')}`;
-
   return (
     <div style={styles.page}>
-
       {/* OVERLAY VIDEO */}
-      {showVideo && (
+      {showVideo && consultationEnCours && (
         <div style={styles.videoOverlay}>
           <div style={styles.videoContainer}>
             <div style={styles.videoHeader}>
@@ -53,7 +251,7 @@ export default function PatientDashboard() {
               <button style={styles.videoClose} onClick={() => setShowVideo(false)}>✕ Terminer</button>
             </div>
             <iframe
-              src={`https://meet.jit.si/${roomName}`}
+              src={`https://meet.jit.si/${consultationEnCours.roomName}`}
               style={styles.videoFrame}
               allow="camera; microphone; fullscreen; display-capture"
               title="Téléconsultation"
@@ -91,18 +289,38 @@ export default function PatientDashboard() {
             👤 Mon profil
           </div>
 
-          <div style={styles.btnAppel} onClick={() => setShowVideo(true)}>
-            📹 Appeler mon médecin
-          </div>
+         {consultationAcceptee ? (
+  <div>
+    <div style={styles.btnAppelActive} onClick={handleRejoindreConsultation}>
+      🎥 Rejoindre la consultation
+    </div>
+    <div style={styles.btnTerminer} onClick={terminerConsultation}>
+      🛑 Terminer la consultation
+    </div>
+    {/* Afficher "Indisponible" SEULEMENT si c'est le médecin qui a appelé */}
+    {consultationEnCours?.initiatedBy === 'medecin' && (
+      <div style={styles.btnIndisponible} onClick={refuserConsultation}>
+        ❌ Je ne suis pas disponible
+      </div>
+    )}
+  </div>
+) : demandeEnAttente ? (
+            <div style={styles.btnAppelWaiting}>
+              ⏳ Demande en attente...
+            </div>
+          ) : (
+            <div style={styles.btnAppel} onClick={demanderConsultation}>
+              📹 Appeler mon médecin
+            </div>
+          )}
         </div>
 
-        <button style={styles.logoutBtn} onClick={handleLogout}>
+        <div style={styles.logoutBtn} onClick={handleLogout}>
           🚪 Déconnexion
-        </button>
+        </div>
       </aside>
 
       <div style={styles.main}>
-
         <header style={styles.header}>
           <div>
             <h1 style={styles.headerTitle}>
@@ -176,7 +394,9 @@ export default function PatientDashboard() {
                   </thead>
                   <tbody>
                     {mesures.length === 0 ? (
-                      <tr><td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td></tr>
+                      <tr>
+                        <td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td>
+                      </tr>
                     ) : (
                       mesures.slice(0, 5).map((m, i) => (
                         <tr key={i} style={styles.tr}>
@@ -228,7 +448,9 @@ export default function PatientDashboard() {
                 </thead>
                 <tbody>
                   {mesures.length === 0 ? (
-                    <tr><td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td></tr>
+                    <tr>
+                      <td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td>
+                    </tr>
                   ) : (
                     mesures.map((m, i) => (
                       <tr key={i} style={styles.tr}>
@@ -283,7 +505,9 @@ export default function PatientDashboard() {
                 </thead>
                 <tbody>
                   {mesures.length === 0 ? (
-                    <tr><td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td></tr>
+                    <tr>
+                      <td colSpan="5" style={{...styles.td, textAlign: 'center', color: '#7f8c8d'}}>Aucune mesure pour le moment.</td>
+                    </tr>
                   ) : (
                     mesures.map((m, i) => (
                       <tr key={i} style={styles.tr}>
@@ -315,7 +539,6 @@ export default function PatientDashboard() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
@@ -340,7 +563,11 @@ const styles = {
   navItem: { padding: '12px 16px', borderRadius: '10px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '14px' },
   navItemActive: { padding: '12px 16px', borderRadius: '10px', color: 'white', backgroundColor: '#1266f7', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
   btnAppel: { margin: '8px 4px 0', padding: '12px 16px', borderRadius: '10px', backgroundColor: '#27ae60', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: '600', textAlign: 'center' },
-  logoutBtn: { margin: '0 12px', padding: '12px 16px', borderRadius: '10px', border: 'none', backgroundColor: 'rgba(231, 76, 60, 0.2)', color: '#e74c3c', cursor: 'pointer', fontSize: '14px', fontWeight: '600', textAlign: 'left' },
+  btnAppelActive: { margin: '8px 4px 0', padding: '12px 16px', borderRadius: '10px', backgroundColor: '#1266f7', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: '600', textAlign: 'center', animation: 'pulse 1.5s infinite' },
+btnTerminer: { margin: '8px 4px 0', padding: '12px 16px', borderRadius: '10px', backgroundColor: '#80a8c9', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: '600', textAlign: 'center' },
+btnIndisponible: { margin: '8px 4px 0', padding: '12px 16px', borderRadius: '10px', backgroundColor: '#e74c3c', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: '600', textAlign: 'center' },  // ← Ajoute ici
+btnAppelWaiting: { margin: '8px 4px 0', padding: '12px 16px', borderRadius: '10px', backgroundColor: '#f39c12', color: 'white', fontSize: '13px', fontWeight: '600', textAlign: 'center', opacity: 0.7 },  btnAppelWaiting: { margin: '8px 4px 0', padding: '12px 16px', borderRadius: '10px', backgroundColor: '#f39c12', color: 'white', fontSize: '13px', fontWeight: '600', textAlign: 'center', opacity: 0.7 },
+  logoutBtn: { margin: '0 12px', padding: '12px 16px', borderRadius: '10px', color: '#e74c3c', backgroundColor: 'rgba(231, 76, 60, 0.2)', cursor: 'pointer', fontSize: '14px', fontWeight: '600', textAlign: 'left' },
   main: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 30px', backgroundColor: 'white', borderBottom: '1px solid #e8ecf0' },
   headerTitle: { color: '#0a1f5c', margin: 0, fontSize: '22px', fontWeight: 'bold' },

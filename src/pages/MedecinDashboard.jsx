@@ -51,6 +51,7 @@ export default function MedecinDashboard() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [patients, setPatients] = useState([]);
   const [alertes, setAlertes] = useState([]);
+  const [demandesConsultation, setDemandesConsultation] = useState([]);
   const fetchDossiers = async () => {
     try {
       const res = await api.get('/medical-records');
@@ -95,11 +96,14 @@ export default function MedecinDashboard() {
       console.error('Erreur dossiers:', err);
     }
   };
-  useEffect(() => {
-    fetchPatients();
-    fetchAlertes();
-  }, []);
-
+ useEffect(() => {
+  fetchPatients();
+  fetchAlertes();
+  fetchDemandesConsultation();
+  
+  const interval = setInterval(fetchDemandesConsultation, 10000);
+  return () => clearInterval(interval);
+}, []);
   useEffect(() => {
     if (patients.length > 0) {
       fetchDossiers();
@@ -150,7 +154,67 @@ export default function MedecinDashboard() {
       setAlertes(res.data);
     } catch (err) { console.error('Erreur alertes:', err); }
   };
-  const fetchPatients = async () => {
+ const fetchDemandesConsultation = async () => {
+  try {
+    // Utilisation directe de l'ID 1 (ton médecin a medecin_id = 1)
+    const medecinId = 1;
+    const res = await api.get(`/consultations/medecin/${medecinId}/demandes`);
+    console.log('Réponse API demandes:', res.data);
+    setDemandesConsultation(res.data);
+    if (res.data.length > 0) {
+      console.log('📞 Nouvelles demandes de consultation !', res.data);
+    }
+  } catch (err) {
+    console.error('Erreur chargement demandes:', err);
+  }
+};
+const accepterConsultation = async (consultation) => {
+  try {
+    await api.post(`/consultations/${consultation.id}/accepter`);
+    alert('✅ Consultation acceptée ! Le patient va être prévenu.');
+    fetchDemandesConsultation();
+    window.open(`https://meet.jit.si/${consultation.room_name}`, '_blank');
+  } catch (err) {
+    console.error('Erreur acceptation:', err);
+    alert('❌ Erreur lors de l\'acceptation.');
+  }
+};
+
+const rejeterConsultation = async (consultation) => {
+  try {
+    await api.post(`/consultations/${consultation.id}/rejeter`);
+    alert('❌ Consultation refusée.');
+    fetchDemandesConsultation();
+  } catch (err) {
+    console.error('Erreur refus:', err);
+    alert('❌ Erreur lors du refus.');
+  }
+};  
+const handleConsultationVideo = async (patient) => {
+  try {
+    // 1. Créer la consultation
+   const res = await api.post('/consultations/demander', {
+  medecin_id: user.medecin?.id || user.id,
+  patient_id: patient.id,
+  initiated_by: 'medecin'  // ← Ajoute cette ligne
+});
+    
+    if (res.data.success) {
+      // 2. L'accepter AUTOMATIQUEMENT (pas besoin d'attente)
+      await api.post(`/consultations/${res.data.consultation.id}/accepter`);
+      
+      // 3. Ouvrir la visio pour le médecin
+      window.open(`https://meet.jit.si/${res.data.room_name}`, '_blank');
+      
+      alert('✅ Appel lancé ! Le patient peut rejoindre.');
+    }
+  } catch (err) {
+    console.error('Erreur appel patient:', err);
+    alert('❌ Erreur lors de l\'appel.');
+  }
+};
+
+const fetchPatients = async () => {
     try {
       const res = await api.get('/medecin/mes-patients');
       setPatients(res.data.map(p => ({
@@ -710,12 +774,13 @@ export default function MedecinDashboard() {
         </div>
 
         <div style={styles.sidebarNav}>
-          {[
-            { key: 'dashboard', label: 'Tableau de bord' },
-            { key: 'patients', label: ' Mes patients' },
-            { key: 'alertes', label: ' Alertes' },
-            { key: 'dossiers', label: ' Dossiers Médicaux', badge: dossiers.length || null },
-          ].map(({ key, label, badge }) => (
+                    {[
+              { key: 'dashboard', label: 'Tableau de bord' },
+              { key: 'patients', label: 'Mes patients' },
+              { key: 'alertes', label: 'Alertes' },
+              { key: 'dossiers', label: 'Dossiers Médicaux', badge: dossiers.length || null },
+              { key: 'demandes', label: '📞 Demandes consultation', badge: demandesConsultation.length || null },
+            ].map(({ key, label, badge }) => (
             <div
               key={key}
               style={activeTab === key ? styles.navItemActive : styles.navItem}
@@ -826,9 +891,8 @@ export default function MedecinDashboard() {
                             <button style={styles.btnDossier} onClick={() => handleOpenCreate(p)}>
                               Saisir le Dossier Médical
                             </button>
-                            <button style={styles.btnConsult} onClick={() => { setSelectedPatient(p); setShowVideo(true); }}>
-                              Consultation vidéo
-                            </button>
+                             <button style={styles.btnConsult} onClick={() => handleConsultationVideo(p)}>
+                              Consultation vidéo</button>
                             <button style={styles.btnPrescrire} onClick={() => { setSelectedPatient(p); setShowOrdonnance(true); fetchPharmacies(); }}>
                               Prescrire
                             </button>
@@ -1018,18 +1082,32 @@ export default function MedecinDashboard() {
             </div>
           </div>
         )}
-        {activeTab !== 'dashboard' && activeTab !== 'dossiers' && activeTab !== 'patients' && activeTab !== 'alertes' && (
-          <div style={styles.content}>
-            <div style={styles.emptyState}>
-              <p style={styles.emptyIcon}>🚧</p>
-              <h2 style={styles.emptyTitle}>Section en cours de développement</h2>
-              <p style={styles.emptyText}>Cette fonctionnalité sera disponible prochainement.</p>
-              <button style={styles.btnPrimary} onClick={() => setActiveTab('dashboard')}>
-                ← Retour au tableau de bord
-              </button>
+       
+{activeTab === 'demandes' && (
+  <div style={styles.content}>
+    <div style={styles.tableCard}>
+      <h2 style={styles.sectionTitle}>📞 Demandes de consultation ({demandesConsultation.length})</h2>
+      {demandesConsultation.length === 0 ? (
+        <p style={{ color: '#7f8c8d', fontSize: '14px' }}>Aucune demande en attente.</p>
+      ) : (
+        demandesConsultation.map((d) => (
+          <div key={d.id} style={styles.demandeCard}>
+            <div style={styles.demandeInfo}>
+              <strong>{d.patient?.user?.prenom} {d.patient?.user?.nom}</strong>
+              <p>Demandé le {new Date(d.created_at).toLocaleString('fr-FR')}</p>
+              <p>Salle : {d.room_name}</p>
+            </div>
+            <div style={styles.demandeActions}>
+              <button style={styles.btnAccepter} onClick={() => accepterConsultation(d)}>✅ Accepter</button>
+              <button style={styles.btnRefuser} onClick={() => rejeterConsultation(d)}>❌ Refuser</button>
             </div>
           </div>
-        )}
+        ))
+      )}
+    </div>
+  </div>
+)}
+  
 
       </div>
     </div>
@@ -1074,6 +1152,35 @@ const styles = {
     flexDirection: 'column',
     boxShadow: '0 20px 35px -8px rgba(0, 0, 0, 0.15)',
   },
+  demandeCard: {
+  backgroundColor: '#f8faff',
+  borderRadius: '12px',
+  padding: '16px',
+  marginBottom: '12px',
+  border: '1px solid #e2e8f0',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+},
+demandeInfo: { flex: 1 },
+demandeActions: { display: 'flex', gap: '10px' },
+btnAccepter: { 
+  backgroundColor: '#27ae60', 
+  color: 'white', 
+  border: 'none', 
+  padding: '8px 16px', 
+  borderRadius: '8px', 
+  cursor: 'pointer' 
+},
+btnRefuser: { 
+  backgroundColor: '#e74c3c', 
+  color: 'white', 
+  border: 'none', 
+  padding: '8px 16px', 
+  borderRadius: '8px', 
+  cursor: 'pointer' 
+},
 
   videoHeader: {
     display: 'flex',
@@ -1454,6 +1561,17 @@ const styles = {
     padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
     fontWeight: '600', whiteSpace: 'nowrap',
   },
+  btnAppeler: {
+  backgroundColor: '#1266f7',
+  color: 'white',
+  border: 'none',
+  padding: '8px 14px',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontSize: '13px',
+  fontWeight: '600',
+  whiteSpace: 'nowrap',
+},
   alertPanel: {
     width: '280px', backgroundColor: 'white', borderRadius: '14px', padding: '20px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflow: 'auto', flexShrink: 0,
@@ -1504,4 +1622,33 @@ const styles = {
   emptyIcon: { fontSize: '48px', margin: '0 0 16px' },
   emptyTitle: { color: '#0a1f5c', fontSize: '20px', fontWeight: 'bold', margin: '0 0 8px' },
   emptyText: { color: '#7f8c8d', fontSize: '14px', margin: '0 0 20px' },
+    demandeCard: {
+    backgroundColor: '#f8faff',
+    borderRadius: '12px',
+    padding: '16px',
+    marginBottom: '12px',
+    border: '1px solid #e2e8f0',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  demandeInfo: { flex: 1 },
+  demandeActions: { display: 'flex', gap: '10px' },
+  btnAccepter: { 
+    backgroundColor: '#27ae60', 
+    color: 'white', 
+    border: 'none', 
+    padding: '8px 16px', 
+    borderRadius: '8px', 
+    cursor: 'pointer' 
+  },
+  btnRefuser: { 
+    backgroundColor: '#e74c3c', 
+    color: 'white', 
+    border: 'none', 
+    padding: '8px 16px', 
+    borderRadius: '8px', 
+    cursor: 'pointer' 
+  },
 };

@@ -7,6 +7,7 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [message, setMessage] = useState('');
   const [erreur, setErreur] = useState('');
   const [chargement, setChargement] = useState(false);
@@ -46,6 +47,11 @@ export default function ForgotPassword() {
     e.preventDefault();
     setErreur('');
 
+    if (password !== passwordConfirmation) {
+      setErreur('Les mots de passe ne correspondent pas.');
+      return;
+    }
+
     if (password.length < 6) {
       setErreur('Le mot de passe doit contenir au moins 6 caractères.');
       return;
@@ -61,7 +67,12 @@ export default function ForgotPassword() {
 
     setChargement(true);
     try {
-      await api.post('/reset-password', { email, code, password });
+      await api.post('/reset-password', { 
+        email, 
+        code, 
+        password, 
+        password_confirmation: passwordConfirmation 
+      });
       setMessage('Mot de passe réinitialisé avec succès !');
       setStep(4);
     } catch (err) {
@@ -179,6 +190,19 @@ export default function ForgotPassword() {
                   />
                   <small style={styles.hint}>Min. 6 caractères, 1 majuscule, 1 caractère spécial</small>
                 </div>
+
+                <div style={styles.inputGroup}>
+                  <label style={styles.label}>Confirmer le mot de passe</label>
+                  <input
+                    style={styles.input}
+                    type="password"
+                    placeholder="••••••••"
+                    value={passwordConfirmation}
+                    onChange={(e) => setPasswordConfirmation(e.target.value)}
+                    required
+                  />
+                </div>
+
                 <button type="submit" style={styles.btnPrimary} disabled={chargement}>
                   {chargement ? 'Réinitialisation...' : '🔒 Réinitialiser le mot de passe'}
                 </button>
